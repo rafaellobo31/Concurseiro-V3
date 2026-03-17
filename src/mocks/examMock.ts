@@ -1,5 +1,6 @@
 import { ExamInput, ExamOutput, ExamQuestion } from '../types/exam';
 import { QUESTION_BANK, DEFAULT_QUESTIONS, MockQuestion } from './questionBankMock';
+import { validateAndCleanQuestions } from '../utils/examUtils';
 
 /**
  * Gera um simulado mockado para testes e preview com questões realistas.
@@ -96,6 +97,8 @@ export function generateMockExam(input: ExamInput): ExamOutput {
     return questao;
   });
 
+  const cleanedQuestoes = validateAndCleanQuestions(questoes, input);
+
   return {
     tituloSimulado,
     descricao,
@@ -108,6 +111,6 @@ export function generateMockExam(input: ExamInput): ExamOutput {
     banca: banca || 'N/A',
     nivel,
     tipoQuestao,
-    questoes
+    questoes: cleanedQuestoes
   };
 }

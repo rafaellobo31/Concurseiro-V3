@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ExamInput, ExamOutput } from '../types/exam';
 import { EXAM_SYSTEM_INSTRUCTION, buildExamPrompt } from '../prompts/examPrompt';
 import { generateMockExam } from '../mocks/examMock';
+import { validateAndCleanQuestions } from '../utils/examUtils';
 import { MOCK_EXAMS, MOCK_RESULTS } from '../mocks/data';
 import { Exam, ExamResult } from '../types';
 
@@ -134,7 +135,10 @@ export const examService = {
       
       const result = JSON.parse(text) as ExamOutput;
       
-      // Garantir que cada questão tenha o sourceMode correto (sempre previous_exam_based agora)
+      // Camada de validação e limpeza para garantir aderência ao cargo
+      result.questoes = validateAndCleanQuestions(result.questoes, input);
+      
+      // Garantir que cada questão tenha o sourceMode correto
       result.questoes = result.questoes.map(q => ({
         ...q,
         sourceMode: 'previous_exam_based'
