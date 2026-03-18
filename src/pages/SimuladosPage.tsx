@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Landmark, BookOpen, Sparkles, Info } from 'lucide-react';
+import { Landmark, BookOpen, Sparkles, Info, FileText } from 'lucide-react';
 import { ConcursoSimuladoForm } from '../components/simulados/ConcursoSimuladoForm';
 import { MateriaSimuladoForm } from '../components/simulados/MateriaSimuladoForm';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '../utils/cn';
 
-type TabType = 'concurso' | 'materia';
+type TabType = 'concurso' | 'materia' | 'edital';
 
 export default function SimuladosPage() {
   const [activeTab, setActiveTab] = useState<TabType>('concurso');
+  const navigate = useNavigate();
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -28,7 +30,7 @@ export default function SimuladosPage() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex p-1 bg-gray-100 rounded-2xl mb-8 max-w-md">
+      <div className="flex p-1 bg-gray-100 rounded-2xl mb-8 max-w-lg">
         <button
           onClick={() => setActiveTab('concurso')}
           className={cn(
@@ -53,6 +55,18 @@ export default function SimuladosPage() {
           <BookOpen className="w-4 h-4" />
           Por Matéria
         </button>
+        <button
+          onClick={() => setActiveTab('edital')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all",
+            activeTab === 'edital'
+              ? "bg-white text-amber-600 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <FileText className="w-4 h-4" />
+          Por Edital
+        </button>
       </div>
 
       {/* Content Area */}
@@ -75,7 +89,7 @@ export default function SimuladosPage() {
                 </div>
                 <ConcursoSimuladoForm />
               </motion.div>
-            ) : (
+            ) : activeTab === 'materia' ? (
               <motion.div
                 key="materia"
                 initial={{ opacity: 0, x: 20 }}
@@ -90,6 +104,31 @@ export default function SimuladosPage() {
                   </p>
                 </div>
                 <MateriaSimuladoForm />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="edital"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="text-center py-10 space-y-6"
+              >
+                <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mx-auto">
+                  <FileText className="text-amber-600 w-10 h-10" />
+                </div>
+                <div className="max-w-md mx-auto space-y-2">
+                  <h2 className="text-2xl font-bold text-gray-900">Análise Inteligente de Edital</h2>
+                  <p className="text-gray-500">
+                    Envie o PDF do seu edital e nossa IA criará um simulado 100% personalizado com base no conteúdo programático.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/edital-simulado')}
+                  className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                >
+                  Começar Análise de Edital
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

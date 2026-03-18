@@ -48,7 +48,21 @@ export default function ExamSessionPage() {
 
   useEffect(() => {
     async function loadExam() {
-      if (!id) return;
+      // Se o simulado já foi passado pronto via state (ex: Simulado por Edital)
+      if (location.state?.exam) {
+        const output = location.state.exam as ExamOutput;
+        setRawExam(output);
+        const mappedExam = mapOutputToExam(output);
+        setExam(mappedExam);
+        setTimeLeft(output.questoes.length * 180);
+        setLoading(false);
+        return;
+      }
+
+      if (!id) {
+        setLoading(false);
+        return;
+      }
 
       if (id.startsWith('new-')) {
         const input = location.state?.input;
@@ -183,7 +197,9 @@ export default function ExamSessionPage() {
       await historyService.saveHistoryItem({
         mode: rawExam.modo === 'concurso' ? 'por_concurso' : 'por_materia',
         tipoQuestao: rawExam.tipoQuestao,
-        origemQuestoes: rawExam.questoes.some(q => q.sourceMode === 'previous_exam_based') ? 'provas_anteriores' : 'ia_generativa',
+        origemQuestoes: rawExam.questoes.some(q => q.sourceMode === 'edital_based') 
+          ? 'baseado_em_edital' 
+          : (rawExam.questoes.some(q => q.sourceMode === 'previous_exam_based') ? 'provas_anteriores' : 'ia_generativa'),
         concurso: rawExam.concurso,
         materia: rawExam.materia,
         area: rawExam.cargo,

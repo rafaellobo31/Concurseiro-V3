@@ -22,7 +22,7 @@ export interface QuestionCorrectionResult {
   assunto: string;
   feedback: string; // Feedback da IA sobre o erro ou acerto
   // Metadados para questões baseadas em provas anteriores
-  sourceMode?: 'ai_generated' | 'previous_exam_based';
+  sourceMode?: 'ai_generated' | 'previous_exam_based' | 'edital_based';
   banca?: string;
   ano?: number;
   concursoReferencia?: string;
