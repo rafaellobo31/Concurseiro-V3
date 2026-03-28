@@ -1,13 +1,8 @@
 import { StudyPlanOutput, StudyPlanInput } from '../../types/studyPlan';
-import { StrategicSummaryCard } from './StrategicSummaryCard';
-import { WeeklyScheduleCard } from './WeeklyScheduleCard';
-import { PrioritySubjectsCard } from './PrioritySubjectsCard';
-import { QuestionsThermometerCard } from './QuestionsThermometerCard';
-import { BankStrategyCard } from './BankStrategyCard';
-import { ReviewCycleCard } from './ReviewCycleCard';
-import { MainTopicsCard } from './MainTopicsCard';
-import { PerformanceOrientationCard } from './PerformanceOrientationCard';
-import { Download, Share2, Printer, ChevronLeft } from 'lucide-react';
+import { PrioritiesCard } from './PrioritiesCard';
+import { WeeklyPlanCard } from './WeeklyPlanCard';
+import { RecommendationsCard } from './RecommendationsCard';
+import { Download, Share2, Printer, ChevronLeft, Sparkles } from 'lucide-react';
 
 interface StudyPlanResultProps {
   plan: StudyPlanOutput;
@@ -45,39 +40,34 @@ export function StudyPlanResult({ plan, input, onBack }: StudyPlanResultProps) {
       </div>
 
       {/* Main Report Title */}
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
-          Relatório Estratégico de Preparação
-        </h2>
-        <p className="text-gray-500 font-medium">
-          Personalizado para: <span className="text-indigo-600">{input.concurso}</span> • Gerado em {new Date().toLocaleDateString()}
-        </p>
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-indigo-700 text-sm font-bold">
+          <Sparkles className="w-4 h-4" />
+          Plano Estratégico Gerado por IA
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+            Seu Roteiro Personalizado de Aprovação
+          </h2>
+          <p className="text-gray-500 font-medium">
+            Concurso: <span className="text-indigo-600">{input.concurso}</span> • Gerado em {new Date().toLocaleDateString()}
+          </p>
+        </div>
       </div>
 
       {/* Cards Grid */}
       <div className="space-y-8">
-        <StrategicSummaryCard summary={plan.resumoEstrategico} />
+        <PrioritiesCard priorities={plan.prioridades} />
         
-        <WeeklyScheduleCard schedule={plan.gradeSemanal} load={plan.cargaSemanal} />
+        <WeeklyPlanCard plan={plan.planoSemanal} />
 
-        <PrioritySubjectsCard priorities={plan.materiasPrioritarias} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <QuestionsThermometerCard thermometer={plan.termometroQuestoes} />
-          <BankStrategyCard strategy={plan.estrategiaBanca} />
-        </div>
-
-        <ReviewCycleCard cycle={plan.cicloRevisao} />
-
-        <MainTopicsCard topics={plan.assuntosPrincipais} />
-
-        <PerformanceOrientationCard performance={plan.orientacaoFinal} />
+        <RecommendationsCard recommendations={plan.recomendacoes} />
       </div>
 
       {/* Footer Disclaimer */}
       <div className="text-center pt-10 border-t border-gray-100">
         <p className="text-xs text-gray-400 max-w-2xl mx-auto">
-          Este plano de estudos foi gerado com base em metodologias de alta performance. 
+          Este plano de estudos foi gerado com base em metodologias de alta performance e no seu desempenho real. 
           Lembre-se que a adaptação individual é fundamental para o sucesso. Ajuste os tempos conforme sua evolução.
         </p>
       </div>

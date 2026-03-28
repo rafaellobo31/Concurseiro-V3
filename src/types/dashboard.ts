@@ -24,4 +24,15 @@ export interface DashboardMetrics {
     pontosFracos: string[];
     recomendacoes: string[];
   };
+  assuntosCriticos: {
+    assunto: string;
+    percentual: number;
+    erros: number;
+  }[];
+  desempenhoPorMateria: {
+    materia: string;
+    percentual: number;
+    totalQuestoes: number;
+    acertos: number;
+  }[];
 }

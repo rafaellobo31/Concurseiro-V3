@@ -21,6 +21,7 @@ export interface QuestionCorrectionResult {
   explanation: string;
   assunto: string;
   feedback: string; // Feedback da IA sobre o erro ou acerto
+  alternativas?: { letra: string; texto: string }[];
   // Metadados para questões baseadas em provas anteriores
   sourceMode?: 'ai_generated' | 'previous_exam_based' | 'edital_based';
   banca?: string;

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Clock, Flag, Send, AlertCircle, BrainCircuit
 import { examService } from '../services/examService';
 import { correctionService } from '../services/correctionService';
 import { historyService } from '../services/historyService';
+import { examPersistenceService } from '../services/examPersistenceService';
 import { useAuth } from '../hooks/useAuth';
 import { Exam, Question } from '../types';
 import { ExamOutput, ExamQuestion } from '../types/exam';
@@ -148,7 +149,11 @@ export default function ExamSessionPage() {
   };
 
   const handleSubmit = async () => {
-    if (!exam || !rawExam) return;
+    console.log('[ExamSessionPage] Botão finalizar simulado clicado');
+    if (!exam || !rawExam) {
+      console.warn('[ExamSessionPage] Simulado não carregado corretamente para finalização');
+      return;
+    }
     
     setCorrecting(true);
     
@@ -193,25 +198,14 @@ export default function ExamSessionPage() {
         timeSpent: correction.summary.timeSpent,
       });
 
-      // Salva no Histórico Detalhado
-      await historyService.saveHistoryItem({
-        mode: rawExam.modo === 'concurso' ? 'por_concurso' : 'por_materia',
-        tipoQuestao: rawExam.tipoQuestao,
-        origemQuestoes: rawExam.questoes.some(q => q.sourceMode === 'edital_based') 
-          ? 'baseado_em_edital' 
-          : (rawExam.questoes.some(q => q.sourceMode === 'previous_exam_based') ? 'provas_anteriores' : 'ia_generativa'),
-        concurso: rawExam.concurso,
-        materia: rawExam.materia,
-        area: rawExam.cargo,
-        banca: rawExam.banca,
-        quantidadeQuestoes: correction.summary.totalQuestions,
-        acertos: correction.summary.correctAnswers,
-        erros: correction.summary.totalQuestions - correction.summary.correctAnswers,
-        percentual: correction.summary.score,
-        nivelDesempenho: correction.summary.performanceLevel,
-        assuntosParaRevisao: correction.analysis.weaknesses,
-        mensagemResumo: correction.analysis.recommendations.join(' ')
+      // Salva no Histórico Detalhado (Resumo + Completo)
+      console.log('[ExamSessionPage] Chamando examPersistenceService.saveExamResult');
+      await examPersistenceService.saveExamResult({
+        exam: rawExam,
+        correction,
+        userAnswers
       });
+      console.log('[ExamSessionPage] Retorno de examPersistenceService.saveExamResult concluído');
 
       // Navega para a página de resultados com o objeto completo de correção
       navigate('/results', { state: { correction } });

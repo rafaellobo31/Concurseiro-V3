@@ -2,6 +2,7 @@ import { SimuladoHistoryItem } from '../../types/history';
 import { Calendar, ChevronRight, Landmark, BookOpen, BarChart2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../../utils/cn';
+import { useNavigate } from 'react-router-dom';
 
 interface HistoryItemCardProps {
   record: SimuladoHistoryItem;
@@ -10,6 +11,8 @@ interface HistoryItemCardProps {
 }
 
 export function HistoryItemCard({ record, index }: HistoryItemCardProps) {
+  const navigate = useNavigate();
+
   const formatDate = (dateStr: string) => {
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
@@ -32,6 +35,7 @@ export function HistoryItemCard({ record, index }: HistoryItemCardProps) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
+      onClick={() => navigate(`/history/${record.id}`)}
       className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer"
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -88,7 +92,12 @@ export function HistoryItemCard({ record, index }: HistoryItemCardProps) {
             </div>
           </div>
           
-          <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-sm font-bold group-hover:bg-indigo-600 group-hover:text-white transition-all">
+            Revisar
+            <ChevronRight className="w-4 h-4" />
+          </div>
+
+          <ChevronRight className="md:hidden w-5 h-5 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </motion.div>

@@ -80,7 +80,22 @@ export const correctionService = {
       const text = response.text;
       if (!text) throw new Error("Empty response from AI");
       
-      return JSON.parse(text) as CorrectionOutput;
+      const result = JSON.parse(text) as CorrectionOutput;
+
+      // Merge alternatives and metadata from input exam
+      result.results = result.results.map(r => {
+        const originalQuestion = input.exam.questoes.find(q => q.id === r.questionId);
+        return {
+          ...r,
+          alternativas: originalQuestion?.alternativas,
+          sourceMode: originalQuestion?.sourceMode,
+          banca: originalQuestion?.banca,
+          ano: originalQuestion?.ano,
+          concursoReferencia: originalQuestion?.concursoReferencia
+        };
+      });
+      
+      return result;
     } catch (error) {
       console.error("Error generating AI correction, falling back to mock:", error);
       return generateMockCorrection(input);

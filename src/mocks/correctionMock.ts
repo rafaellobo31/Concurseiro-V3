@@ -39,6 +39,7 @@ export function generateMockCorrection(input: CorrectionInput): CorrectionOutput
       feedback: isCorrect 
         ? "Excelente! Você compreendeu bem o comando da questão e o assunto abordado." 
         : "Houve um equívoco na interpretação ou no conhecimento técnico. Revise a explicação detalhada.",
+      alternativas: q.alternativas,
       sourceMode: q.sourceMode,
       banca: q.banca,
       ano: q.ano,

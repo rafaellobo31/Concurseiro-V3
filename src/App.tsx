@@ -9,6 +9,7 @@ import StudyPlanPage from './pages/StudyPlanPage';
 import ExamSessionPage from './pages/ExamSessionPage';
 import ResultsPage from './pages/ResultsPage';
 import HistoryPage from './pages/HistoryPage';
+import HistoryDetailPage from './pages/HistoryDetailPage';
 import EditalSimuladoPage from './pages/EditalSimuladoPage';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/study-plan" element={<StudyPlanPage />} />
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/history/:id" element={<HistoryDetailPage />} />
             <Route path="/edital-simulado" element={<EditalSimuladoPage />} />
             <Route path="/exam-session" element={<ExamSessionPage />} />
             <Route path="/profile" element={<div className="p-10 text-center">Página de Perfil em construção.</div>} />

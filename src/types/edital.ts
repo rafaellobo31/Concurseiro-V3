@@ -5,7 +5,7 @@ export interface EditalMateria {
 
 export interface EditalPrioridade {
   materia: string;
-  peso: 'alto' | 'médio' | 'baixo';
+  peso: string;
 }
 
 export interface EditalAnalysis {

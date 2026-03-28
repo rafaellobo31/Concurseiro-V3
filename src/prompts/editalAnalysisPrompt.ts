@@ -56,7 +56,9 @@ REGRAS IMPORTANTES
 1. Não invente informações que não estejam indicadas no edital.
 2. Se houver múltiplos cargos no mesmo edital, priorize o cargo informado pelo usuário, se esse contexto estiver disponível.
 3. Se o cargo não estiver explícito, extraia a estrutura geral do edital e identifique os conteúdos mais prováveis.
-4. O campo "materias" deve listar apenas matérias identificáveis no edital.
+4. O campo "materias" deve ser OBRIGATORIAMENTE um array de objetos, onde cada objeto tem as chaves "nome" (string) e "topicos" (array de strings).
+   - EXEMPLO CORRETO: {"nome": "Português", "topicos": ["Sintaxe", "Morfologia"]}
+   - EXEMPLO INCORRETO: "Português" (não use strings simples no array)
 5. O campo "topicos" deve conter tópicos realmente relacionados a cada matéria.
 6. O campo "observacoes" deve trazer pontos úteis para geração futura do simulado, por exemplo:
    - presença de redação

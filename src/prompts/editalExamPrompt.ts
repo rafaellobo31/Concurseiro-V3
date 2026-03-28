@@ -17,7 +17,11 @@ Regras de Formato:
 - Para múltipla escolha, use 5 alternativas (A a E).
 `;
 
-export function buildEditalExamPrompt(analysis: EditalAnalysis, quantidade: number = 10): string {
+export function buildEditalExamPrompt(analysis: EditalAnalysis, quantidade: number = 10, selectedSubjects?: string[]): string {
+  const filteredMaterias = selectedSubjects && selectedSubjects.length > 0
+    ? analysis.materias.filter(m => selectedSubjects.includes(m.nome))
+    : analysis.materias;
+
   return `
 Gere um simulado inédito baseado na seguinte análise de edital:
 
@@ -28,8 +32,8 @@ DADOS DO EDITAL:
 - Banca: ${analysis.banca}
 - Escolaridade: ${analysis.escolaridade}
 
-CONTEÚDO PROGRAMÁTICO (MATÉRIAS E TÓPICOS):
-${analysis.materias.map(m => `- ${m.nome}: ${m.topicos.join(', ')}`).join('\n')}
+CONTEÚDO PROGRAMÁTICO (MATÉRIAS E TÓPICOS SELECIONADOS):
+${filteredMaterias.map(m => `- ${m.nome}: ${m.topicos.join(', ')}`).join('\n')}
 
 OBSERVAÇÕES ADICIONAIS:
 ${analysis.observacoes.join('\n')}

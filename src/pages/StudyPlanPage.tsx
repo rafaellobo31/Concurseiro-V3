@@ -3,16 +3,17 @@ import { StudyPlanInput, StudyPlanOutput } from '../types/studyPlan';
 import { StudyPlanForm } from '../components/studyPlan/StudyPlanForm';
 import { StudyPlanResult } from '../components/studyPlan/StudyPlanResult';
 import { generateStudyPlan } from '../services/studyPlanService';
+import { dashboardAnalyticsService } from '../services/dashboardAnalyticsService';
 import { Sparkles, Layout, ShieldCheck, GraduationCap, BrainCircuit, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const LOADING_MESSAGES = [
-  "Analisando o edital do concurso...",
-  "Mapeando as matérias de maior peso...",
-  "Calculando a distribuição ideal de horas...",
-  "Definindo ciclos de revisão científica...",
-  "Consultando táticas da banca examinadora...",
-  "Finalizando seu plano estratégico..."
+  "Analisando seu desempenho real...",
+  "Mapeando suas matérias críticas...",
+  "Calculando a distribuição estratégica...",
+  "Definindo ciclos de revisão personalizada...",
+  "Otimizando seu tempo disponível...",
+  "Finalizando seu plano de alta performance..."
 ];
 
 export default function StudyPlanPage() {
@@ -35,10 +36,22 @@ export default function StudyPlanPage() {
 
   const handleGeneratePlan = async (input: StudyPlanInput) => {
     setLoading(true);
-    setUserInput(input);
     
     try {
-      const newPlan = await generateStudyPlan(input);
+      // Buscar dados reais de desempenho
+      const analytics = await dashboardAnalyticsService.getDashboardAnalytics();
+      
+      const inputWithPerformance: StudyPlanInput = {
+        ...input,
+        performanceData: analytics ? {
+          mediaGeral: analytics.visaoGeral.mediaGeral,
+          desempenhoPorMateria: analytics.desempenhoPorMateria,
+          assuntosCriticos: analytics.assuntosCriticos
+        } : undefined
+      };
+
+      setUserInput(inputWithPerformance);
+      const newPlan = await generateStudyPlan(inputWithPerformance);
       setPlan(newPlan);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {

@@ -32,123 +32,46 @@ export async function generateStudyPlan(input: StudyPlanInput): Promise<StudyPla
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            resumoEstrategico: {
-              type: Type.OBJECT,
-              properties: {
-                titulo: { type: Type.STRING },
-                descricao: { type: Type.STRING }
-              },
-              required: ["titulo", "descricao"]
-            },
-            cargaSemanal: {
-              type: Type.OBJECT,
-              properties: {
-                horasTotais: { type: Type.NUMBER },
-                descricao: { type: Type.STRING },
-                divisao: {
-                  type: Type.OBJECT,
-                  properties: {
-                    teoria: { type: Type.STRING },
-                    questoes: { type: Type.STRING },
-                    revisao: { type: Type.STRING }
-                  },
-                  required: ["teoria", "questoes", "revisao"]
-                }
-              },
-              required: ["horasTotais", "descricao", "divisao"]
-            },
-            gradeSemanal: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  dia: { type: Type.STRING },
-                  blocos: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        materia: { type: Type.STRING },
-                        duracao: { type: Type.STRING },
-                        foco: { type: Type.STRING }
-                      },
-                      required: ["materia", "duracao", "foco"]
-                    }
-                  }
-                },
-                required: ["dia", "blocos"]
-              }
-            },
-            materiasPrioritarias: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  nome: { type: Type.STRING },
-                  peso: { type: Type.STRING, enum: ["baixo", "médio", "alto"] },
-                  justificativa: { type: Type.STRING }
-                },
-                required: ["nome", "peso", "justificativa"]
-              }
-            },
-            termometroQuestoes: {
-              type: Type.OBJECT,
-              properties: {
-                intensidade: { type: Type.STRING, enum: ["baixa", "moderada", "alta", "intensa"] },
-                metaSemanal: { type: Type.STRING },
-                justificativa: { type: Type.STRING }
-              },
-              required: ["intensidade", "metaSemanal", "justificativa"]
-            },
-            assuntosPrincipais: {
+            prioridades: {
               type: Type.ARRAY,
               items: {
                 type: Type.OBJECT,
                 properties: {
                   materia: { type: Type.STRING },
-                  topicos: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING }
-                  }
+                  nivelPrioridade: { type: Type.STRING, enum: ["Alta", "Média", "Baixa"] },
+                  motivo: { type: Type.STRING }
                 },
-                required: ["materia", "topicos"]
+                required: ["materia", "nivelPrioridade", "motivo"]
               }
             },
-            estrategiaBanca: {
-              type: Type.OBJECT,
-              properties: {
-                banca: { type: Type.STRING },
-                perfil: { type: Type.STRING },
-                metodologia: { type: Type.STRING }
-              },
-              required: ["banca", "perfil", "metodologia"]
+            planoSemanal: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  dia: { type: Type.STRING },
+                  atividades: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        materia: { type: Type.STRING },
+                        tempo: { type: Type.STRING },
+                        tipo: { type: Type.STRING, enum: ["teoria", "revisão", "simulado"] }
+                      },
+                      required: ["materia", "tempo", "tipo"]
+                    }
+                  }
+                },
+                required: ["dia", "atividades"]
+              }
             },
-            cicloRevisao: {
-              type: Type.OBJECT,
-              properties: {
-                curta: { type: Type.STRING },
-                semanal: { type: Type.STRING },
-                acumulada: { type: Type.STRING }
-              },
-              required: ["curta", "semanal", "acumulada"]
-            },
-            orientacaoFinal: {
-              type: Type.OBJECT,
-              properties: {
-                mensagem: { type: Type.STRING },
-                errosEvitar: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING }
-                }
-              },
-              required: ["mensagem", "errosEvitar"]
+            recomendacoes: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
             }
           },
-          required: [
-            "resumoEstrategico", "cargaSemanal", "gradeSemanal", 
-            "materiasPrioritarias", "termometroQuestoes", "assuntosPrincipais", 
-            "estrategiaBanca", "cicloRevisao", "orientacaoFinal"
-          ]
+          required: ["prioridades", "planoSemanal", "recomendacoes"]
         }
       },
     });

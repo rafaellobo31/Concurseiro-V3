@@ -4,14 +4,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowLeft, FileText, AlertCircle } from 'lucide-react';
 import { EditalUploadCard } from '../components/simulator/EditalUploadCard';
 import { EditalAnalysisSummary } from '../components/simulator/EditalAnalysisSummary';
+import { EditalSimuladoConfig } from '../components/EditalSimuladoConfig';
 import { editalService } from '../services/editalService';
 import { editalExamService } from '../services/editalExamService';
 import { EditalAnalysis } from '../types/edital';
 
 export default function EditalSimuladoPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'upload' | 'analysis' | 'generating'>('upload');
+  const [step, setStep] = useState<'upload' | 'analysis' | 'config' | 'generating'>('upload');
   const [analysis, setAnalysis] = useState<EditalAnalysis | null>(null);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(10);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +28,8 @@ export default function EditalSimuladoPage() {
     
     if (result.success && result.data) {
       setAnalysis(result.data);
+      // Pré-selecionar todas as matérias por padrão
+      setSelectedSubjects(result.data.materias.map(m => m.nome));
       setStep('analysis');
     } else {
       setError(result.error || 'Ocorreu um erro ao analisar o edital.');
@@ -33,7 +38,11 @@ export default function EditalSimuladoPage() {
     setIsAnalyzing(false);
   };
 
-  const handleConfirm = async () => {
+  const handleConfirmAnalysis = () => {
+    setStep('config');
+  };
+
+  const handleGenerate = async () => {
     if (!analysis || isGenerating) return;
     
     setIsGenerating(true);
@@ -41,17 +50,25 @@ export default function EditalSimuladoPage() {
     setError(null);
 
     try {
-      // ETAPA 2: Geração do simulado usando APENAS o resultado estruturado da análise
-      const result = await editalExamService.generateEditalExam(analysis, 10);
+      // ETAPA 2: Geração do simulado usando APENAS o resultado estruturado da análise e as configurações do usuário
+      const result = await editalExamService.generateEditalExam(analysis, selectedQuestionCount, selectedSubjects);
       
       // Navegar para a sessão do simulado com os dados gerados
       navigate('/exam-session', { state: { exam: result } });
     } catch (err) {
       console.error('Erro ao gerar simulado:', err);
       setError('Erro ao gerar as questões do simulado. Tente novamente.');
-      setStep('analysis');
+      setStep('config');
       setIsGenerating(false);
     }
+  };
+
+  const toggleSubject = (subject: string) => {
+    setSelectedSubjects(prev => 
+      prev.includes(subject) 
+        ? prev.filter(s => s !== subject) 
+        : [...prev, subject]
+    );
   };
 
   return (
@@ -108,8 +125,30 @@ export default function EditalSimuladoPage() {
           >
             <EditalAnalysisSummary 
               analysis={analysis} 
-              onConfirm={handleConfirm} 
+              onConfirm={handleConfirmAnalysis} 
               onCancel={() => setStep('upload')} 
+            />
+          </motion.div>
+        )}
+
+        {step === 'config' && analysis && (
+          <motion.div
+            key="config-step"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <EditalSimuladoConfig
+              analysis={analysis}
+              selectedSubjects={selectedSubjects}
+              onToggleSubject={toggleSubject}
+              onSelectAll={() => setSelectedSubjects(analysis.materias.map(m => m.nome))}
+              onDeselectAll={() => setSelectedSubjects([])}
+              selectedQuestionCount={selectedQuestionCount}
+              onSelectQuestionCount={setSelectedQuestionCount}
+              onGenerate={handleGenerate}
+              onBack={() => setStep('analysis')}
+              isGenerating={isGenerating}
             />
           </motion.div>
         )}

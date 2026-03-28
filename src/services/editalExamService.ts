@@ -9,7 +9,7 @@ export const editalExamService = {
   /**
    * Gera um simulado baseado na análise estruturada do edital.
    */
-  async generateEditalExam(analysis: EditalAnalysis, quantidade: number = 10): Promise<ExamOutput> {
+  async generateEditalExam(analysis: EditalAnalysis, quantidade: number = 10, selectedSubjects?: string[]): Promise<ExamOutput> {
     const apiKey = process.env.GEMINI_API_KEY;
 
     const examInput: ExamInput = {
@@ -19,7 +19,7 @@ export const editalExamService = {
       cargo: analysis.cargo,
       banca: analysis.banca,
       nivelEscolaridade: analysis.escolaridade,
-      materia: analysis.materias[0]?.nome || 'Geral',
+      materia: selectedSubjects && selectedSubjects.length > 0 ? selectedSubjects.join(', ') : (analysis.materias[0]?.nome || 'Geral'),
       tipoQuestao: 'multipla_escolha',
       quantidade,
       nivel: 'medio'
@@ -34,7 +34,7 @@ export const editalExamService = {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const model = "gemini-3.1-pro-preview";
-      const prompt = buildEditalExamPrompt(analysis, quantidade);
+      const prompt = buildEditalExamPrompt(analysis, quantidade, selectedSubjects);
 
       const response = await ai.models.generateContent({
         model,
@@ -98,7 +98,7 @@ export const editalExamService = {
       }));
 
       // Adicionar metadados do edital ao resultado
-      result.modo = 'concurso';
+      result.modo = 'edital';
       result.concurso = analysis.concurso;
       result.orgao = analysis.orgao;
       result.cargo = analysis.cargo;

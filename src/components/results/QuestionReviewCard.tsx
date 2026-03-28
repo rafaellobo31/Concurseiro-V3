@@ -73,6 +73,46 @@ export const QuestionReviewCard: React.FC<QuestionReviewCardProps> = ({ result, 
                 <p className="text-gray-700 leading-relaxed">{result.enunciado}</p>
               </div>
 
+              {/* Alternatives */}
+              {result.alternativas && result.alternativas.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Info className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Alternativas</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {result.alternativas.map((alt) => {
+                      const isUserChoice = result.userAnswer === alt.letra;
+                      const isCorrectChoice = result.correctAnswer === alt.letra;
+                      
+                      return (
+                        <div 
+                          key={alt.letra}
+                          className={cn(
+                            "p-3 rounded-xl border text-sm flex gap-3 transition-colors",
+                            isCorrectChoice ? "bg-emerald-50 border-emerald-200 text-emerald-900" : 
+                            isUserChoice ? "bg-red-50 border-red-200 text-red-900" :
+                            "bg-white border-gray-100 text-gray-700"
+                          )}
+                        >
+                          <span className={cn(
+                            "w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-xs",
+                            isCorrectChoice ? "bg-emerald-500 text-white" :
+                            isUserChoice ? "bg-red-500 text-white" :
+                            "bg-gray-100 text-gray-500"
+                          )}>
+                            {alt.letra}
+                          </span>
+                          <span className="flex-1">{alt.texto}</span>
+                          {isCorrectChoice && <CheckCircle2 className="w-4 h-4 text-emerald-500 self-center" />}
+                          {isUserChoice && !isCorrectChoice && <XCircle className="w-4 h-4 text-red-500 self-center" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Answers Comparison */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className={cn(

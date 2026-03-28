@@ -8,6 +8,7 @@ export const historyService = {
    * Salva um novo registro de histórico.
    */
   async saveHistoryItem(record: Omit<SimuladoHistoryItem, 'id' | 'createdAt'>): Promise<SimuladoHistoryItem> {
+    console.log('[HistoryService] saveHistoryItem chamado com record:', record);
     const newRecord: SimuladoHistoryItem = {
       ...record,
       id: `hist-${Math.random().toString(36).substr(2, 9)}`,
@@ -43,10 +44,12 @@ export const historyService = {
             nivel_desempenho: newRecord.nivelDesempenho,
             mensagem_resumo: newRecord.mensagemResumo,
             assuntos_revisao: newRecord.assuntosParaRevisao,
+            exam_id: newRecord.examId,
           };
 
           console.log('[HistoryService] Payload enviado para Supabase:', supabaseData);
 
+          console.log('[HistoryService] Payload simulado_history:', supabaseData);
           const { data, error } = await supabase!
             .from('simulado_history')
             .insert(supabaseData)
@@ -54,9 +57,9 @@ export const historyService = {
             .single();
 
           if (error) {
-            console.error('[HistoryService] Erro retornado pelo Supabase:', error);
+            console.error('[HistoryService] Erro insert simulado_history:', error);
           } else {
-            console.log('[HistoryService] Resultado do insert:', data);
+            console.log('[HistoryService] Resultado insert simulado_history:', data);
             if (data) {
               return {
                 ...newRecord,
@@ -88,18 +91,22 @@ export const historyService = {
    * Retorna a lista completa de histórico.
    */
   async getHistoryItems(): Promise<SimuladoHistoryItem[]> {
+    console.log('[HistoryService] getHistoryItems chamado');
     // Tenta buscar do Supabase se estiver configurado e o usuário estiver logado
     if (isSupabaseConfigured) {
       try {
         const { data: { user } } = await supabase!.auth.getUser();
+        console.log('[HistoryService] getHistoryItems - Usuário:', user?.id);
         
         if (user) {
           const { data, error } = await supabase!
             .from('simulado_history')
             .select('*')
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 
           if (!error && data) {
+            console.log('[HistoryService] getHistoryItems - Sucesso Supabase:', data.length, 'itens');
             return data.map((item: any) => ({
               id: item.id,
               createdAt: item.created_at,
@@ -117,6 +124,7 @@ export const historyService = {
               nivelDesempenho: item.nivel_desempenho,
               mensagemResumo: item.mensagem_resumo,
               assuntosParaRevisao: item.assuntos_revisao,
+              examId: item.exam_id,
             }));
           } else if (error) {
             console.error('[HistoryService] Erro ao buscar do Supabase:', error);
@@ -177,7 +185,10 @@ export const historyService = {
    * Calcula estatísticas baseadas no histórico.
    */
   async getStats(): Promise<HistoryStats> {
+    console.log('[HistoryService] getStats chamado');
     const history = await this.getHistoryItems();
+    console.log('[HistoryService] getStats - Itens processados:', history.length);
+    
     if (history.length === 0) {
       return {
         totalSimulados: 0,

@@ -1,7 +1,9 @@
+import { CorrectionOutput } from './correction';
+
 export interface SimuladoHistoryItem {
   id: string;
   createdAt: string;
-  mode: 'por_concurso' | 'por_materia';
+  mode: 'por_concurso' | 'por_materia' | 'por_edital';
   tipoQuestao?: string;
   origemQuestoes?: string;
   concurso?: string;
@@ -15,6 +17,8 @@ export interface SimuladoHistoryItem {
   nivelDesempenho: string;
   mensagemResumo: string;
   assuntosParaRevisao?: string[];
+  examId?: string;
+  correctionData?: CorrectionOutput;
 }
 
 export type HistoryStats = {

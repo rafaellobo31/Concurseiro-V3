@@ -140,7 +140,7 @@ export function EditalAnalysisSummary({ analysis, onConfirm, onCancel }: EditalA
           onClick={onConfirm}
           className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
         >
-          Confirmar e Gerar Simulado
+          Confirmar Análise
         </button>
         <button
           onClick={onCancel}
