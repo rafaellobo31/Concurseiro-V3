@@ -1,6 +1,6 @@
-import { ExamInput, ExamOutput, ExamQuestion } from '../types/exam';
-import { QUESTION_BANK, DEFAULT_QUESTIONS, MockQuestion } from './questionBankMock';
-import { validateAndCleanQuestions } from '../utils/examUtils';
+import { ExamInput, ExamOutput, ExamQuestion } from '../types/exam.js';
+import { QUESTION_BANK, DEFAULT_QUESTIONS, MockQuestion } from './questionBankMock.js';
+import { validateAndCleanQuestions } from '../utils/examUtils.js';
 
 /**
  * Gera um simulado mockado para testes e preview com questões realistas.

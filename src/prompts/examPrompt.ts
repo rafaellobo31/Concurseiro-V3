@@ -1,4 +1,4 @@
-import { ExamInput, ExamOutput } from '../types/exam';
+import { ExamInput, ExamOutput } from '../types/exam.js';
 
 export const EXAM_SYSTEM_INSTRUCTION = `
 Você é um especialista sênior em concursos públicos brasileiros, especializado em análise de provas anteriores e engenharia reversa de bancas examinadoras (como FGV, CESPE/Cebraspe, FCC, VUNESP).

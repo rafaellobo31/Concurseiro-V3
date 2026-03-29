@@ -1,4 +1,4 @@
-import { StudyPlanInput, StudyPlanOutput } from '../types/studyPlan';
+import { StudyPlanInput, StudyPlanOutput } from '../types/studyPlan.js';
 
 export const CONCURSOS_LIST = [
   'INSS',

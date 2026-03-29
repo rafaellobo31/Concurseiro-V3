@@ -1,4 +1,4 @@
-import { ExamQuestion, ExamInput } from '../types/exam';
+import { ExamQuestion, ExamInput } from '../types/exam.js';
 
 /**
  * Verifica se uma questão é compatível com a seleção do usuário.

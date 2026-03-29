@@ -1,4 +1,4 @@
-import { CorrectionInput } from '../types/correction';
+import { CorrectionInput } from '../types/correction.js';
 
 /**
  * Constrói o prompt para a IA corrigir o simulado e gerar análise.

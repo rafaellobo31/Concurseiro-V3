@@ -1,4 +1,4 @@
-import { EditalAnalysis } from '../types/edital';
+import { EditalAnalysis } from '../types/edital.js';
 
 export const EDITAL_EXAM_SYSTEM_INSTRUCTION = `
 Você é um especialista em concursos públicos brasileiros, especializado em elaboração de questões inéditas e pedagógicas.

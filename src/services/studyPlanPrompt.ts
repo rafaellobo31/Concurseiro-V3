@@ -1,4 +1,4 @@
-import { StudyPlanInput } from '../types/studyPlan';
+import { StudyPlanInput } from '../types/studyPlan.js';
 
 export const getStudyPlanPrompt = (input: StudyPlanInput) => {
   const performanceInfo = input.performanceData ? `

@@ -1,4 +1,4 @@
-import { CorrectionInput, CorrectionOutput, QuestionCorrectionResult } from '../types/correction';
+import { CorrectionInput, CorrectionOutput, QuestionCorrectionResult } from '../types/correction.js';
 
 /**
  * Gera uma correção mockada para o simulado.

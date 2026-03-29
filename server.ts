@@ -5,24 +5,24 @@ import { fileURLToPath } from "url";
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Import utilities and prompts from src
-import { withRetry } from "./src/utils/aiRetry.ts";
-import { EXAM_SYSTEM_INSTRUCTION, buildExamPrompt } from "./src/prompts/examPrompt.ts";
-import { buildCorrectionPrompt } from "./src/prompts/correctionPrompt.ts";
-import { STUDY_PLAN_SYSTEM_INSTRUCTION, getStudyPlanPrompt } from "./src/services/studyPlanPrompt.ts";
-import { EDITAL_EXAM_SYSTEM_INSTRUCTION, buildEditalExamPrompt } from "./src/prompts/editalExamPrompt.ts";
-import { validateAndCleanQuestions } from "./src/utils/examUtils.ts";
+import { withRetry } from "./src/utils/aiRetry.js";
+import { EXAM_SYSTEM_INSTRUCTION, buildExamPrompt } from "./src/prompts/examPrompt.js";
+import { buildCorrectionPrompt } from "./src/prompts/correctionPrompt.js";
+import { STUDY_PLAN_SYSTEM_INSTRUCTION, getStudyPlanPrompt } from "./src/services/studyPlanPrompt.js";
+import { EDITAL_EXAM_SYSTEM_INSTRUCTION, buildEditalExamPrompt } from "./src/prompts/editalExamPrompt.js";
+import { validateAndCleanQuestions } from "./src/utils/examUtils.js";
 
 // Import mocks
-import { generateMockExam } from "./src/mocks/examMock.ts";
-import { generateMockCorrection } from "./src/mocks/correctionMock.ts";
-import { generateMockStudyPlan } from "./src/mocks/studyPlanMock.ts";
+import { generateMockExam } from "./src/mocks/examMock.js";
+import { generateMockCorrection } from "./src/mocks/correctionMock.js";
+import { generateMockStudyPlan } from "./src/mocks/studyPlanMock.js";
 
 // Import Gemini handlers
-import generateExamHandler from "./api/gemini/generate-exam.ts";
-import correctExamHandler from "./api/gemini/correct-exam.ts";
-import analyzeEditalHandler from "./api/gemini/analyze-edital.ts";
-import generateStudyPlanHandler from "./api/gemini/generate-study-plan.ts";
-import generateEditalExamHandler from "./api/gemini/generate-edital-exam.ts";
+import generateExamHandler from "./api/gemini/generate-exam.js";
+import correctExamHandler from "./api/gemini/correct-exam.js";
+import analyzeEditalHandler from "./api/gemini/analyze-edital.js";
+import generateStudyPlanHandler from "./api/gemini/generate-study-plan.js";
+import generateEditalExamHandler from "./api/gemini/generate-edital-exam.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
