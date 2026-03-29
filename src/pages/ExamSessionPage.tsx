@@ -36,6 +36,8 @@ export default function ExamSessionPage() {
   const [generating, setGenerating] = useState(false);
   const [correcting, setCorrecting] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
+  const [isFallback, setIsFallback] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -73,8 +75,19 @@ export default function ExamSessionPage() {
         }
 
         setGenerating(true);
+        setRetryMessage(null);
+        setIsFallback(false);
         try {
-          const output = await examService.generateExam(input);
+          const output = await examService.generateExam(input, (attempt) => {
+            setRetryMessage(`A IA está com alta demanda. Tentativa ${attempt} de 2...`);
+          });
+          
+          // Se o título ou descrição contiverem "Mock", é um sinal de fallback (ou podemos checar logs)
+          // Mas como não mudamos o retorno, vamos confiar nos logs ou adicionar um check simples
+          if (output.descricao?.includes("Mock") || output.tituloSimulado?.includes("Mock")) {
+            setIsFallback(true);
+          }
+          
           setRawExam(output);
           const mappedExam = mapOutputToExam(output);
           setExam(mappedExam);
@@ -156,6 +169,7 @@ export default function ExamSessionPage() {
     }
     
     setCorrecting(true);
+    setRetryMessage(null);
     
     try {
       // Prepara as respostas para o formato de correção
@@ -186,6 +200,8 @@ export default function ExamSessionPage() {
         exam: rawExam,
         answers: userAnswers,
         timeSpent
+      }, (attempt) => {
+        setRetryMessage(`A IA está com alta demanda. Tentativa ${attempt} de 2...`);
       });
 
       // Salva o resultado básico (compatibilidade com o dashboard atual)
@@ -240,10 +256,17 @@ export default function ExamSessionPage() {
             exit={{ opacity: 0, y: -10 }}
             className="text-indigo-600 font-medium"
           >
-            {LOADING_MESSAGES[loadingMessageIndex]}
+            {retryMessage || LOADING_MESSAGES[loadingMessageIndex]}
           </motion.p>
         </AnimatePresence>
       </div>
+      
+      {retryMessage && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 text-sm font-bold animate-pulse">
+          <AlertCircle className="w-4 h-4" />
+          IA sobrecarregada, tentando novamente...
+        </div>
+      )}
       
       <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
         <motion.div
@@ -270,8 +293,8 @@ export default function ExamSessionPage() {
       
       <div className="text-center space-y-3">
         <h2 className="text-2xl font-black text-gray-900 tracking-tight">Corrigindo seu Simulado</h2>
-        <p className="text-gray-500 font-medium animate-pulse">
-          O Mentor IA está analisando suas respostas e preparando seu plano de ação...
+        <p className="text-indigo-600 font-bold animate-pulse">
+          {retryMessage || "O Mentor IA está analisando suas respostas e preparando seu plano de ação..."}
         </p>
       </div>
     </div>
@@ -285,6 +308,14 @@ export default function ExamSessionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Fallback Banner */}
+      {isFallback && (
+        <div className="bg-amber-500 text-white px-4 py-2 text-center text-sm font-bold flex items-center justify-center gap-2">
+          <AlertCircle className="w-4 h-4" />
+          A IA está temporariamente indisponível. Usando banco de questões de reserva.
+        </div>
+      )}
+      
       {/* Header Bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">

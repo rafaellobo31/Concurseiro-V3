@@ -5,9 +5,10 @@ import { cn } from '../../utils/cn';
 interface EditalUploadCardProps {
   onUpload: (file: File) => void;
   isAnalyzing: boolean;
+  retryMessage?: string | null;
 }
 
-export const EditalUploadCard: React.FC<EditalUploadCardProps> = ({ onUpload, isAnalyzing }) => {
+export const EditalUploadCard: React.FC<EditalUploadCardProps> = ({ onUpload, isAnalyzing, retryMessage }) => {
   const [isDragging, setIsDragging] = React.useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +54,7 @@ export const EditalUploadCard: React.FC<EditalUploadCardProps> = ({ onUpload, is
       
       <label className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold cursor-pointer hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
         <FileText className="w-5 h-5 mr-2" />
-        {isAnalyzing ? 'Analisando...' : 'Selecionar PDF'}
+        {isAnalyzing ? (retryMessage || 'Analisando...') : 'Selecionar PDF'}
         <input type="file" className="hidden" accept=".pdf" onChange={handleFileChange} disabled={isAnalyzing} />
       </label>
 

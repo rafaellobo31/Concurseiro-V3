@@ -15,22 +15,22 @@ export const editalService = {
   /**
    * Passo 2: Analisar o edital
    */
-  async analyze(text: string): Promise<EditalAnalysisResult> {
-    return editalAnalysisService.analyzeEdital(text);
+  async analyze(text: string, onRetry?: (attempt: number) => void): Promise<EditalAnalysisResult> {
+    return editalAnalysisService.analyzeEdital(text, onRetry);
   },
 
   /**
    * Método de conveniência que extrai e analisa o edital de um arquivo.
    */
-  async analyzeEdital(file: File): Promise<EditalAnalysisResult> {
+  async analyzeEdital(file: File, onRetry?: (attempt: number) => void): Promise<EditalAnalysisResult> {
     const text = await this.extractText(file);
-    return this.analyze(text);
+    return this.analyze(text, onRetry);
   },
 
   /**
    * Passo 3: Gerar simulado baseado na análise
    */
-  async generateExam(analysis: EditalAnalysis, quantidade: number = 10, selectedSubjects?: string[]): Promise<ExamOutput> {
-    return editalExamService.generateEditalExam(analysis, quantidade, selectedSubjects);
+  async generateExam(analysis: EditalAnalysis, quantidade: number = 10, selectedSubjects?: string[], onRetry?: (attempt: number) => void): Promise<ExamOutput> {
+    return editalExamService.generateEditalExam(analysis, quantidade, selectedSubjects, onRetry);
   }
 };

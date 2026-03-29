@@ -17,14 +17,18 @@ export default function EditalSimuladoPage() {
   const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(10);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleUpload = async (file: File) => {
     if (isAnalyzing) return;
     setIsAnalyzing(true);
+    setRetryMessage(null);
     setError(null);
     
-    const result = await editalService.analyzeEdital(file);
+    const result = await editalService.analyzeEdital(file, (attempt) => {
+      setRetryMessage(`A IA está com alta demanda. Tentativa ${attempt} de 2...`);
+    });
     
     if (result.success && result.data) {
       setAnalysis(result.data);
@@ -47,11 +51,14 @@ export default function EditalSimuladoPage() {
     
     setIsGenerating(true);
     setStep('generating');
+    setRetryMessage(null);
     setError(null);
 
     try {
       // ETAPA 2: Geração do simulado usando APENAS o resultado estruturado da análise e as configurações do usuário
-      const result = await editalExamService.generateEditalExam(analysis, selectedQuestionCount, selectedSubjects);
+      const result = await editalExamService.generateEditalExam(analysis, selectedQuestionCount, selectedSubjects, (attempt) => {
+        setRetryMessage(`A IA está com alta demanda. Tentativa ${attempt} de 2...`);
+      });
       
       // Navegar para a sessão do simulado com os dados gerados
       navigate('/exam-session', { state: { exam: result } });
@@ -105,7 +112,7 @@ export default function EditalSimuladoPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <EditalUploadCard onUpload={handleUpload} isAnalyzing={isAnalyzing} />
+            <EditalUploadCard onUpload={handleUpload} isAnalyzing={isAnalyzing} retryMessage={retryMessage} />
             
             {error && (
               <div className="mt-6 p-4 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-3 text-red-600">
@@ -168,7 +175,9 @@ export default function EditalSimuladoPage() {
             </div>
             <div className="text-center space-y-2">
               <h3 className="text-xl font-bold text-gray-900">Gerando seu Simulado</h3>
-              <p className="text-gray-500">Selecionando as melhores questões para o seu edital...</p>
+              <p className="text-indigo-600 font-medium animate-pulse">
+                {retryMessage || "Selecionando as melhores questões para o seu edital..."}
+              </p>
             </div>
           </motion.div>
         )}

@@ -19,6 +19,7 @@ const LOADING_MESSAGES = [
 export default function StudyPlanPage() {
   const [loading, setLoading] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [plan, setPlan] = useState<StudyPlanOutput | null>(null);
   const [userInput, setUserInput] = useState<StudyPlanInput | null>(null);
 
@@ -51,7 +52,10 @@ export default function StudyPlanPage() {
       };
 
       setUserInput(inputWithPerformance);
-      const newPlan = await generateStudyPlan(inputWithPerformance);
+      setRetryMessage(null);
+      const newPlan = await generateStudyPlan(inputWithPerformance, (attempt) => {
+        setRetryMessage(`A IA está com alta demanda. Tentativa ${attempt} de 2...`);
+      });
       setPlan(newPlan);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
@@ -113,10 +117,17 @@ export default function StudyPlanPage() {
                     exit={{ opacity: 0, y: -10 }}
                     className="text-indigo-600 font-medium"
                   >
-                    {LOADING_MESSAGES[loadingMessageIndex]}
+                    {retryMessage || LOADING_MESSAGES[loadingMessageIndex]}
                   </motion.p>
                 </AnimatePresence>
               </div>
+              
+              {retryMessage && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 text-sm font-bold animate-pulse">
+                  <BrainCircuit className="w-4 h-4" />
+                  IA sobrecarregada, tentando novamente...
+                </div>
+              )}
               
               <div className="w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <motion.div

@@ -4,12 +4,13 @@ import { ExamOutput, ExamInput } from '../types/exam';
 import { EDITAL_EXAM_SYSTEM_INSTRUCTION, buildEditalExamPrompt } from '../prompts/editalExamPrompt';
 import { generateMockExam } from '../mocks/examMock';
 import { validateAndCleanQuestions } from '../utils/examUtils';
+import { withRetry } from '../utils/aiRetry';
 
 export const editalExamService = {
   /**
    * Gera um simulado baseado na análise estruturada do edital.
    */
-  async generateEditalExam(analysis: EditalAnalysis, quantidade: number = 10, selectedSubjects?: string[]): Promise<ExamOutput> {
+  async generateEditalExam(analysis: EditalAnalysis, quantidade: number = 10, selectedSubjects?: string[], onRetry?: (attempt: number) => void): Promise<ExamOutput> {
     const apiKey = process.env.GEMINI_API_KEY;
 
     const examInput: ExamInput = {
@@ -41,57 +42,64 @@ export const editalExamService = {
       const model = modelName;
       const prompt = buildEditalExamPrompt(analysis, quantidade, selectedSubjects);
 
-      const response = await ai.models.generateContent({
-        model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          systemInstruction: EDITAL_EXAM_SYSTEM_INSTRUCTION,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              tituloSimulado: { type: Type.STRING },
-              descricao: { type: Type.STRING },
-              questoes: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    id: { type: Type.INTEGER },
-                    enunciado: { type: Type.STRING },
-                    tipo: { type: Type.STRING, enum: ["multipla_escolha", "verdadeiro_falso"] },
-                    banca: { type: Type.STRING },
-                    ano: { type: Type.INTEGER },
-                    concursoReferencia: { type: Type.STRING },
-                    alternativas: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          letra: { type: Type.STRING },
-                          texto: { type: Type.STRING }
-                        },
-                        required: ["letra", "texto"]
-                      }
+      const result = await withRetry(async () => {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: {
+            systemInstruction: EDITAL_EXAM_SYSTEM_INSTRUCTION,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                tituloSimulado: { type: Type.STRING },
+                descricao: { type: Type.STRING },
+                questoes: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      id: { type: Type.INTEGER },
+                      enunciado: { type: Type.STRING },
+                      tipo: { type: Type.STRING, enum: ["multipla_escolha", "verdadeiro_falso"] },
+                      banca: { type: Type.STRING },
+                      ano: { type: Type.INTEGER },
+                      concursoReferencia: { type: Type.STRING },
+                      alternativas: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            letra: { type: Type.STRING },
+                            texto: { type: Type.STRING }
+                          },
+                          required: ["letra", "texto"]
+                        }
+                      },
+                      correta: { type: Type.STRING },
+                      explicacao: { type: Type.STRING },
+                      assunto: { type: Type.STRING },
+                      peso: { type: Type.STRING, enum: ["baixo", "medio", "alto"] }
                     },
-                    correta: { type: Type.STRING },
-                    explicacao: { type: Type.STRING },
-                    assunto: { type: Type.STRING },
-                    peso: { type: Type.STRING, enum: ["baixo", "medio", "alto"] }
-                  },
-                  required: ["id", "enunciado", "tipo", "explicacao", "assunto", "peso", "banca", "ano", "concursoReferencia"]
+                    required: ["id", "enunciado", "tipo", "explicacao", "assunto", "peso", "banca", "ano", "concursoReferencia"]
+                  }
                 }
-              }
-            },
-            required: ["tituloSimulado", "descricao", "questoes"]
+              },
+              required: ["tituloSimulado", "descricao", "questoes"]
+            }
           }
+        });
+
+        const text = response.text;
+        if (!text) throw new Error("Empty response from AI");
+        
+        return JSON.parse(text) as ExamOutput;
+      }, {
+        onRetry: (attempt, error) => {
+          console.warn(`[EditalExamService] Tentativa ${attempt} de geração falhou devido a alta demanda ou erro temporário. Tentando novamente...`);
+          if (onRetry) onRetry(attempt);
         }
       });
-
-      const text = response.text;
-      if (!text) throw new Error("Empty response from AI");
-      
-      const result = JSON.parse(text) as ExamOutput;
       
       // Camada de validação e limpeza para garantir aderência ao cargo
       result.questoes = validateAndCleanQuestions(result.questoes, examInput);
