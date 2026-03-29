@@ -6,7 +6,7 @@ export function ResultActions() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <Link
-        to="/generator"
+        to="/simulados"
         className="flex items-center justify-center gap-3 p-5 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 group"
       >
         <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />

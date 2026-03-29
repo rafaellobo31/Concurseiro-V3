@@ -27,7 +27,7 @@ export function MateriaSimuladoForm() {
 
     // Simulate generation delay
     setTimeout(() => {
-      navigate('/exam/new-materia-exam', { state: { input } });
+      navigate('/exam-session/new-materia-exam', { state: { input } });
     }, 1500);
   };
 

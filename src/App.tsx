@@ -31,12 +31,11 @@ export default function App() {
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/history/:id" element={<HistoryDetailPage />} />
             <Route path="/edital-simulado" element={<EditalSimuladoPage />} />
-            <Route path="/exam-session" element={<ExamSessionPage />} />
             <Route path="/profile" element={<div className="p-10 text-center">Página de Perfil em construção.</div>} />
           </Route>
 
-          {/* Full Screen Exam Session */}
-          <Route path="/exam/:id" element={<ExamSessionPage />} />
+          {/* Full Screen Exam Session - Unified Route */}
+          <Route path="/exam-session/:id?" element={<ExamSessionPage />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

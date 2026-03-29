@@ -28,7 +28,7 @@ export default function ResultsPage() {
           </div>
           <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Relatório não encontrado</h2>
           <p className="text-gray-500 mb-8">Não conseguimos localizar os dados deste simulado. Tente gerar um novo.</p>
-          <Link to="/generator" className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+          <Link to="/simulados" className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
             Ir para o Gerador
           </Link>
         </div>

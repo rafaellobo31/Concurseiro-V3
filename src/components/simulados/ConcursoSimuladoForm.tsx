@@ -57,7 +57,7 @@ export function ConcursoSimuladoForm() {
 
     // Simulate generation delay
     setTimeout(() => {
-      navigate('/exam/new-concurso-exam', { state: { input } });
+      navigate('/exam-session/new-concurso-exam', { state: { input } });
     }, 1500);
   };
 
