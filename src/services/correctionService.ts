@@ -1,8 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { CorrectionInput, CorrectionOutput } from '../types/correction';
-import { buildCorrectionPrompt } from '../prompts/correctionPrompt';
 import { generateMockCorrection } from '../mocks/correctionMock';
-import { withRetry } from '../utils/aiRetry';
 
 /**
  * Serviço para correção de simulados e análise de desempenho.
@@ -13,90 +10,20 @@ export const correctionService = {
    * Tenta usar a API do Gemini se disponível, caso contrário usa dados mockados.
    */
   async correctExam(input: CorrectionInput, onRetry?: (attempt: number) => void): Promise<CorrectionOutput> {
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    // Verifica se a chave da API está configurada
-    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY' || apiKey.trim() === '') {
-      console.log('[CorrectionService] Gemini API Key not configured or placeholder. Using mock correction.');
-      console.log('[CorrectionService] API Key status:', apiKey ? `Placeholder (${apiKey.substring(0, 4)}...)` : 'Missing');
-      return generateMockCorrection(input);
-    }
-
-    const modelName = "gemini-3-flash-preview";
-    console.log(`[CorrectionService] Starting correction with model: ${modelName}`);
-    console.log(`[CorrectionService] API Key status: Present (starts with ${apiKey.substring(0, 4)}...)`);
+    console.log(`[CorrectionService] Requesting correction from backend...`);
 
     try {
-      const result = await withRetry(async () => {
-        const ai = new GoogleGenAI({ apiKey });
-        const model = modelName;
-        const prompt = buildCorrectionPrompt(input);
-
-        const response = await ai.models.generateContent({
-          model,
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                summary: {
-                  type: Type.OBJECT,
-                  properties: {
-                    totalQuestions: { type: Type.NUMBER },
-                    correctAnswers: { type: Type.NUMBER },
-                    incorrectAnswers: { type: Type.NUMBER },
-                    score: { type: Type.NUMBER },
-                    performanceLevel: { type: Type.STRING },
-                    timeSpent: { type: Type.NUMBER }
-                  },
-                  required: ["totalQuestions", "correctAnswers", "score", "performanceLevel", "timeSpent"]
-                },
-                results: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      questionId: { type: Type.NUMBER },
-                      enunciado: { type: Type.STRING },
-                      isCorrect: { type: Type.BOOLEAN },
-                      userAnswer: { type: Type.STRING },
-                      correctAnswer: { type: Type.STRING },
-                      explanation: { type: Type.STRING },
-                      assunto: { type: Type.STRING },
-                      feedback: { type: Type.STRING }
-                    },
-                    required: ["questionId", "isCorrect", "userAnswer", "correctAnswer", "explanation", "assunto", "feedback"]
-                  }
-                },
-                analysis: {
-                  type: Type.OBJECT,
-                  properties: {
-                    strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    recommendations: { type: Type.ARRAY, items: { type: Type.STRING } }
-                  },
-                  required: ["strengths", "weaknesses", "recommendations"]
-                }
-              },
-              required: ["summary", "results", "analysis"]
-            }
-          }
-        });
-
-        const text = response.text;
-        if (!text) throw new Error("Empty response from AI");
-        
-        const parsed = JSON.parse(text) as CorrectionOutput;
-        return parsed;
-      }, {
-        onRetry: (attempt, error) => {
-          console.warn(`[CorrectionService] Tentativa ${attempt} de correção falhou devido a alta demanda ou erro temporário. Tentando novamente...`);
-          if (onRetry) onRetry(attempt);
-        }
+      const response = await fetch('/api/gemini/correct-exam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input })
       });
 
-      console.log('[CorrectionService] AI correction successful.');
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.statusText}`);
+      }
+
+      const result = await response.json() as CorrectionOutput;
 
       // Merge alternatives and metadata from input exam
       result.results = result.results.map(r => {
@@ -113,15 +40,7 @@ export const correctionService = {
       
       return result;
     } catch (error: any) {
-      console.error("[CorrectionService] Error generating AI correction after retries, falling back to mock:", error);
-      const isHighDemand = String(error).toLowerCase().includes("high demand") || 
-                           String(error).toLowerCase().includes("503") ||
-                           String(error).toLowerCase().includes("unavailable");
-      
-      if (isHighDemand) {
-        console.log("[CorrectionService] Fallback acionado por alta demanda na API Gemini.");
-      }
-      
+      console.error("[CorrectionService] Error calling backend for correction:", error);
       return generateMockCorrection(input);
     }
   }
