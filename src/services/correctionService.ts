@@ -16,13 +16,18 @@ export const correctionService = {
 
     // Verifica se a chave da API está configurada
     if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY' || apiKey.trim() === '') {
-      console.log('Gemini API Key not configured. Using mock correction.');
+      console.log('[CorrectionService] Gemini API Key not configured or placeholder. Using mock correction.');
+      console.log('[CorrectionService] API Key status:', apiKey ? `Placeholder (${apiKey.substring(0, 4)}...)` : 'Missing');
       return generateMockCorrection(input);
     }
 
+    const modelName = "gemini-3-flash-preview";
+    console.log(`[CorrectionService] Starting correction with model: ${modelName}`);
+    console.log(`[CorrectionService] API Key status: Present (starts with ${apiKey.substring(0, 4)}...)`);
+
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const model = "gemini-3.1-pro-preview";
+      const model = modelName;
       const prompt = buildCorrectionPrompt(input);
 
       const response = await ai.models.generateContent({
@@ -81,6 +86,8 @@ export const correctionService = {
       if (!text) throw new Error("Empty response from AI");
       
       const result = JSON.parse(text) as CorrectionOutput;
+
+      console.log('[CorrectionService] AI correction successful.');
 
       // Merge alternatives and metadata from input exam
       result.results = result.results.map(r => {

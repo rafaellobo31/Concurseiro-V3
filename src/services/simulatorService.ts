@@ -69,13 +69,18 @@ export async function generateSimulator(input: SimulatorInput): Promise<Simulato
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY' || apiKey.trim() === '') {
-    console.log('Gemini API Key not configured. Using mock simulator.');
+    console.log('[SimulatorService] Gemini API Key not configured or placeholder. Using mock simulator.');
+    console.log('[SimulatorService] API Key status:', apiKey ? `Placeholder (${apiKey.substring(0, 4)}...)` : 'Missing');
     return generateMockSimulator(input);
   }
 
+  const modelName = "gemini-3-flash-preview";
+  console.log(`[SimulatorService] Starting simulator generation with model: ${modelName}`);
+  console.log(`[SimulatorService] API Key status: Present (starts with ${apiKey.substring(0, 4)}...)`);
+
   try {
     const genAI = new GoogleGenAI({ apiKey });
-    const model = "gemini-3.1-pro-preview";
+    const model = modelName;
     const prompt = getSimulatorPrompt(input);
 
     const response = await genAI.models.generateContent({

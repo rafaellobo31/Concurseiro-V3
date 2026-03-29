@@ -9,13 +9,18 @@ export const editalAnalysisService = {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY' || apiKey.trim() === '') {
-      console.warn('Gemini API Key not configured. Using mock analysis.');
+      console.warn('[EditalAnalysisService] Gemini API Key not configured or placeholder. Using mock analysis.');
+      console.log('[EditalAnalysisService] API Key status:', apiKey ? `Placeholder (${apiKey.substring(0, 4)}...)` : 'Missing');
       return this.getMockAnalysis();
     }
 
+    const modelName = "gemini-3-flash-preview";
+    console.log(`[EditalAnalysisService] Starting analysis with model: ${modelName}`);
+    console.log(`[EditalAnalysisService] API Key status: Present (starts with ${apiKey.substring(0, 4)}...)`);
+
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const model = "gemini-3.1-pro-preview";
+      const model = modelName;
       
       const prompt = `
         Analise o seguinte texto extraído de um edital de concurso público e extraia as informações estruturadas.

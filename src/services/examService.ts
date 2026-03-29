@@ -53,13 +53,18 @@ export const examService = {
 
     // Verifica se a chave da API está configurada
     if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY' || apiKey.trim() === '') {
-      console.log('Gemini API Key not configured. Using mock exam.');
+      console.log('[ExamService] Gemini API Key not configured or placeholder. Using mock exam.');
+      console.log('[ExamService] API Key status:', apiKey ? `Placeholder (${apiKey.substring(0, 4)}...)` : 'Missing');
       return generateMockExam(input);
     }
 
+    const modelName = "gemini-3-flash-preview";
+    console.log(`[ExamService] Starting exam generation with model: ${modelName}`);
+    console.log(`[ExamService] API Key status: Present (starts with ${apiKey.substring(0, 4)}...)`);
+
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const model = "gemini-3.1-pro-preview";
+      const model = modelName;
       const prompt = buildExamPrompt(input);
 
       const response = await ai.models.generateContent({

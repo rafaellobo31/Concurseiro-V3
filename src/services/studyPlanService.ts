@@ -12,15 +12,20 @@ export async function generateStudyPlan(input: StudyPlanInput): Promise<StudyPla
 
   // Fallback to mock if API key is missing or looks like a placeholder
   if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY' || apiKey.trim() === '') {
-    console.log('Gemini API Key not configured. Using mock study plan.');
+    console.log('[StudyPlanService] Gemini API Key not configured or placeholder. Using mock study plan.');
+    console.log('[StudyPlanService] API Key status:', apiKey ? `Placeholder (${apiKey.substring(0, 4)}...)` : 'Missing');
     return new Promise((resolve) => {
       setTimeout(() => resolve(generateMockStudyPlan(input)), 1500);
     });
   }
 
+  const modelName = "gemini-3-flash-preview";
+  console.log(`[StudyPlanService] Starting study plan generation with model: ${modelName}`);
+  console.log(`[StudyPlanService] API Key status: Present (starts with ${apiKey.substring(0, 4)}...)`);
+
   try {
     const genAI = new GoogleGenAI({ apiKey });
-    const model = "gemini-3.1-pro-preview";
+    const model = modelName;
     const prompt = getStudyPlanPrompt(input);
 
     const response = await genAI.models.generateContent({
