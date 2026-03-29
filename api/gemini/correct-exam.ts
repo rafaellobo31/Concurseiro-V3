@@ -4,17 +4,31 @@ import { buildCorrectionPrompt } from "../../src/prompts/correctionPrompt.ts";
 import { generateMockCorrection } from "../../src/mocks/correctionMock.ts";
 
 export default async function handler(req: any, res: any) {
+  console.log(`[Correct-Exam] Início da requisição. Método: ${req.method}`);
+  
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: true, message: "Método não permitido" });
+  }
+
   const { input } = req.body;
+  console.log(`[Correct-Exam] Payload recebido:`, JSON.stringify(input));
+
+  if (!input) {
+    return res.status(400).json({ error: true, message: "Payload 'input' ausente na requisição" });
+  }
+
   const ai = getAI();
 
   if (!ai) {
-    console.log("[Correct-Exam] API Key missing. Falling back to mock.");
+    console.warn("[Correct-Exam] API Key missing. Falling back to mock.");
     return res.json(generateMockCorrection(input));
   }
 
   try {
     const result = await withRetry(async () => {
       const prompt = buildCorrectionPrompt(input);
+      console.log(`[Correct-Exam] Prompt construído. Chamando Gemini...`);
+      
       const response = await ai.models.generateContent({
         model: modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -66,10 +80,25 @@ export default async function handler(req: any, res: any) {
           }
         }
       });
-      return JSON.parse(response.text);
+      
+      console.log(`[Correct-Exam] Resposta recebida da Gemini.`);
+      
+      if (!response.text) {
+        throw new Error("Resposta vazia da Gemini");
+      }
+
+      try {
+        return JSON.parse(response.text);
+      } catch (parseError: any) {
+        console.error(`[Correct-Exam] Erro ao parsear JSON da Gemini:`, response.text);
+        throw new Error(`Erro de parsing JSON: ${parseError.message}`);
+      }
     }, "correct-exam");
+    
+    console.log(`[Correct-Exam] Sucesso na correção.`);
     res.json(result);
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`[Correct-Exam] Falha na correção:`, error);
     handleGeminiError(res, error, "correct-exam", generateMockCorrection(input));
   }
 }

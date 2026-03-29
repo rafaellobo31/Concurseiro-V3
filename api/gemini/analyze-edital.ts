@@ -2,11 +2,23 @@ import { Type } from "@google/genai";
 import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.ts";
 
 export default async function handler(req: any, res: any) {
+  console.log(`[Analyze-Edital] Início da requisição. Método: ${req.method}`);
+  
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: true, message: "Método não permitido" });
+  }
+
   const { text } = req.body;
+  console.log(`[Analyze-Edital] Tamanho do texto recebido: ${text ? text.length : 0} caracteres`);
+
+  if (!text) {
+    return res.status(400).json({ error: true, message: "Texto do edital ausente na requisição" });
+  }
+
   const ai = getAI();
 
   if (!ai) {
-    console.log("[Analyze-Edital] API Key missing. Falling back to mock.");
+    console.warn("[Analyze-Edital] API Key missing. Falling back to mock.");
     return res.json({
       success: true,
       data: {
@@ -51,6 +63,8 @@ export default async function handler(req: any, res: any) {
         8. Prioridades de estudo (quais matérias parecem ter mais peso ou importância)
       `;
 
+      console.log(`[Analyze-Edital] Chamando Gemini para análise...`);
+      
       const response = await ai.models.generateContent({
         model: modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -93,10 +107,25 @@ export default async function handler(req: any, res: any) {
           }
         }
       });
-      return JSON.parse(response.text);
+      
+      console.log(`[Analyze-Edital] Resposta recebida da Gemini.`);
+      
+      if (!response.text) {
+        throw new Error("Resposta vazia da Gemini");
+      }
+
+      try {
+        return JSON.parse(response.text);
+      } catch (parseError: any) {
+        console.error(`[Analyze-Edital] Erro ao parsear JSON da Gemini:`, response.text);
+        throw new Error(`Erro de parsing JSON: ${parseError.message}`);
+      }
     }, "analyze-edital");
+    
+    console.log(`[Analyze-Edital] Sucesso na análise.`);
     res.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`[Analyze-Edital] Falha na análise:`, error);
     handleGeminiError(res, error, "analyze-edital");
   }
 }

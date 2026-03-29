@@ -4,11 +4,23 @@ import { EDITAL_EXAM_SYSTEM_INSTRUCTION, buildEditalExamPrompt } from "../../src
 import { generateMockExam } from "../../src/mocks/examMock.ts";
 
 export default async function handler(req: any, res: any) {
+  console.log(`[Generate-Edital-Exam] Início da requisição. Método: ${req.method}`);
+  
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: true, message: "Método não permitido" });
+  }
+
   const { analysis, quantidade, selectedSubjects } = req.body;
+  console.log(`[Generate-Edital-Exam] Payload recebido:`, JSON.stringify({ analysis: analysis?.concurso, quantidade, selectedSubjects }));
+
+  if (!analysis) {
+    return res.status(400).json({ error: true, message: "Análise do edital ausente na requisição" });
+  }
+
   const ai = getAI();
 
   if (!ai) {
-    console.log("[Generate-Edital-Exam] API Key missing. Falling back to mock.");
+    console.warn("[Generate-Edital-Exam] API Key missing. Falling back to mock.");
     return res.json(generateMockExam({
       modo: 'concurso',
       concurso: analysis.concurso,
@@ -26,6 +38,8 @@ export default async function handler(req: any, res: any) {
   try {
     const result = await withRetry(async () => {
       const prompt = buildEditalExamPrompt(analysis, quantidade, selectedSubjects);
+      console.log(`[Generate-Edital-Exam] Prompt construído. Chamando Gemini...`);
+      
       const response = await ai.models.generateContent({
         model: modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -72,10 +86,25 @@ export default async function handler(req: any, res: any) {
           }
         }
       });
-      return JSON.parse(response.text);
+      
+      console.log(`[Generate-Edital-Exam] Resposta recebida da Gemini.`);
+      
+      if (!response.text) {
+        throw new Error("Resposta vazia da Gemini");
+      }
+
+      try {
+        return JSON.parse(response.text);
+      } catch (parseError: any) {
+        console.error(`[Generate-Edital-Exam] Erro ao parsear JSON da Gemini:`, response.text);
+        throw new Error(`Erro de parsing JSON: ${parseError.message}`);
+      }
     }, "generate-edital-exam");
+    
+    console.log(`[Generate-Edital-Exam] Sucesso na geração.`);
     res.json(result);
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`[Generate-Edital-Exam] Falha na geração:`, error);
     handleGeminiError(res, error, "generate-edital-exam", generateMockExam({
       modo: 'concurso',
       concurso: analysis.concurso,

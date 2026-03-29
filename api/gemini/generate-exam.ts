@@ -4,17 +4,31 @@ import { EXAM_SYSTEM_INSTRUCTION, buildExamPrompt } from "../../src/prompts/exam
 import { generateMockExam } from "../../src/mocks/examMock.ts";
 
 export default async function handler(req: any, res: any) {
+  console.log(`[Generate-Exam] Início da requisição. Método: ${req.method}`);
+  
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: true, message: "Método não permitido" });
+  }
+
   const { input } = req.body;
+  console.log(`[Generate-Exam] Payload recebido:`, JSON.stringify(input));
+
+  if (!input) {
+    return res.status(400).json({ error: true, message: "Payload 'input' ausente na requisição" });
+  }
+
   const ai = getAI();
 
   if (!ai) {
-    console.log("[Generate-Exam] API Key missing. Falling back to mock.");
+    console.warn("[Generate-Exam] API Key missing. Falling back to mock.");
     return res.json(generateMockExam(input));
   }
 
   try {
     const result = await withRetry(async () => {
       const prompt = buildExamPrompt(input);
+      console.log(`[Generate-Exam] Prompt construído. Chamando Gemini...`);
+      
       const response = await ai.models.generateContent({
         model: modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -82,10 +96,25 @@ export default async function handler(req: any, res: any) {
           }
         }
       });
-      return JSON.parse(response.text);
+      
+      console.log(`[Generate-Exam] Resposta recebida da Gemini.`);
+      
+      if (!response.text) {
+        throw new Error("Resposta vazia da Gemini");
+      }
+
+      try {
+        return JSON.parse(response.text);
+      } catch (parseError: any) {
+        console.error(`[Generate-Exam] Erro ao parsear JSON da Gemini:`, response.text);
+        throw new Error(`Erro de parsing JSON: ${parseError.message}`);
+      }
     }, "generate-exam");
+    
+    console.log(`[Generate-Exam] Sucesso na geração.`);
     res.json(result);
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`[Generate-Exam] Falha na geração:`, error);
     handleGeminiError(res, error, "generate-exam", generateMockExam(input));
   }
 }
