@@ -10,10 +10,11 @@ export const correctionService = {
    * Tenta usar a API do Gemini se disponível, caso contrário usa dados mockados.
    */
   async correctExam(input: CorrectionInput, onRetry?: (attempt: number) => void): Promise<CorrectionOutput> {
-    console.log(`[CorrectionService] Requesting correction from backend...`);
+    const endpoint = '/api/gemini/correct-exam';
+    console.log(`[CorrectionService] Chamada iniciada para ${endpoint}`);
 
     try {
-      const response = await fetch('/api/gemini/correct-exam', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input })
@@ -24,6 +25,7 @@ export const correctionService = {
       }
 
       const result = await response.json() as CorrectionOutput;
+      console.log(`[CorrectionService] Sucesso na correção do simulado`);
 
       // Merge alternatives and metadata from input exam
       result.results = result.results.map(r => {
@@ -40,7 +42,8 @@ export const correctionService = {
       
       return result;
     } catch (error: any) {
-      console.error("[CorrectionService] Error calling backend for correction:", error);
+      console.error(`[CorrectionService] Erro ao chamar backend para correção:`, error);
+      console.log(`[CorrectionService] Fallback acionado: Gerando correção mock`);
       return generateMockCorrection(input);
     }
   }

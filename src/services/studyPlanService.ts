@@ -6,10 +6,11 @@ import { generateMockStudyPlan } from '../mocks/studyPlanMock';
  * Uses Gemini AI if configured, otherwise falls back to a mock generator.
  */
 export async function generateStudyPlan(input: StudyPlanInput, onRetry?: (attempt: number) => void): Promise<StudyPlanOutput> {
-  console.log(`[StudyPlanService] Requesting study plan from backend...`);
+  const endpoint = '/api/gemini/generate-study-plan';
+  console.log(`[StudyPlanService] Chamada iniciada para ${endpoint}`);
 
   try {
-    const response = await fetch('/api/gemini/generate-study-plan', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input })
@@ -19,9 +20,12 @@ export async function generateStudyPlan(input: StudyPlanInput, onRetry?: (attemp
       throw new Error(`Backend error: ${response.statusText}`);
     }
 
-    return await response.json() as StudyPlanOutput;
+    const result = await response.json() as StudyPlanOutput;
+    console.log(`[StudyPlanService] Sucesso na geração do plano de estudos`);
+    return result;
   } catch (error: any) {
-    console.error("[StudyPlanService] Error calling backend for study plan:", error);
+    console.error(`[StudyPlanService] Erro ao chamar backend para plano de estudos:`, error);
+    console.log(`[StudyPlanService] Fallback acionado: Gerando plano de estudos mock`);
     return generateMockStudyPlan(input);
   }
 }

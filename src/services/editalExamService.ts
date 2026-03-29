@@ -21,10 +21,11 @@ export const editalExamService = {
       nivel: 'medio'
     };
 
-    console.log(`[EditalExamService] Requesting edital exam from backend...`);
+    const endpoint = '/api/gemini/generate-edital-exam';
+    console.log(`[EditalExamService] Chamada iniciada para ${endpoint}`);
 
     try {
-      const response = await fetch('/api/gemini/generate-edital-exam', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ analysis, quantidade, selectedSubjects })
@@ -35,6 +36,7 @@ export const editalExamService = {
       }
 
       const result = await response.json() as ExamOutput;
+      console.log(`[EditalExamService] Sucesso na geração do simulado baseado em edital`);
       
       // Camada de validação e limpeza para garantir aderência ao cargo
       result.questoes = validateAndCleanQuestions(result.questoes, examInput);
@@ -57,7 +59,8 @@ export const editalExamService = {
 
       return result;
     } catch (error) {
-      console.error("[EditalExamService] Error calling backend for edital exam:", error);
+      console.error(`[EditalExamService] Erro ao chamar backend para simulado de edital:`, error);
+      console.log(`[EditalExamService] Fallback acionado: Gerando simulado mock`);
       return generateMockExam(examInput);
     }
   }

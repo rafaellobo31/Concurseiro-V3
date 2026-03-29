@@ -47,10 +47,11 @@ export const examService = {
    * Tenta usar a API do Gemini se disponível, caso contrário usa dados mockados.
    */
   async generateExam(input: ExamInput, onRetry?: (attempt: number) => void): Promise<ExamOutput> {
-    console.log(`[ExamService] Requesting exam generation from backend...`);
+    const endpoint = '/api/gemini/generate-exam';
+    console.log(`[ExamService] Chamada iniciada para ${endpoint}`);
 
     try {
-      const response = await fetch('/api/gemini/generate-exam', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input })
@@ -61,6 +62,7 @@ export const examService = {
       }
 
       const result = await response.json() as ExamOutput;
+      console.log(`[ExamService] Sucesso na geração do simulado`);
       
       // Camada de validação e limpeza para garantir aderência ao cargo
       result.questoes = validateAndCleanQuestions(result.questoes, input);
@@ -73,7 +75,8 @@ export const examService = {
 
       return result;
     } catch (error: any) {
-      console.error("[ExamService] Error calling backend for exam generation:", error);
+      console.error(`[ExamService] Erro ao chamar backend para geração:`, error);
+      console.log(`[ExamService] Fallback acionado: Gerando simulado mock`);
       return generateMockExam(input);
     }
   }

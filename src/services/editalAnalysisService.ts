@@ -5,10 +5,11 @@ import { EditalAnalysisResult } from '../types/edital';
  */
 export const editalAnalysisService = {
   async analyzeEdital(text: string, onRetry?: (attempt: number) => void): Promise<EditalAnalysisResult> {
-    console.log(`[EditalAnalysisService] Requesting edital analysis from backend...`);
+    const endpoint = '/api/gemini/analyze-edital';
+    console.log(`[EditalAnalysisService] Chamada iniciada para ${endpoint}`);
 
     try {
-      const response = await fetch('/api/gemini/analyze-edital', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
@@ -18,9 +19,12 @@ export const editalAnalysisService = {
         throw new Error(`Backend error: ${response.statusText}`);
       }
 
-      return await response.json() as EditalAnalysisResult;
+      const result = await response.json() as EditalAnalysisResult;
+      console.log(`[EditalAnalysisService] Sucesso na análise do edital`);
+      return result;
     } catch (error: any) {
-      console.error("[EditalAnalysisService] Error calling backend for edital analysis:", error);
+      console.error(`[EditalAnalysisService] Erro ao chamar backend para análise:`, error);
+      console.log(`[EditalAnalysisService] Fallback acionado: Retornando erro amigável`);
       return {
         success: false,
         error: "Erro ao conectar com o servidor de análise. Tente novamente."
