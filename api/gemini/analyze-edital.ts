@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.ts";
+import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.js";
 
 export default async function handler(req: any, res: any) {
   console.log(`[Analyze-Edital] Início da requisição. Método: ${req.method}`);

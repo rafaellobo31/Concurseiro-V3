@@ -1,7 +1,7 @@
 import { Type } from "@google/genai";
-import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.ts";
-import { EXAM_SYSTEM_INSTRUCTION, buildExamPrompt } from "../../src/prompts/examPrompt.ts";
-import { generateMockExam } from "../../src/mocks/examMock.ts";
+import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.js";
+import { EXAM_SYSTEM_INSTRUCTION, buildExamPrompt } from "../../src/prompts/examPrompt.js";
+import { generateMockExam } from "../../src/mocks/examMock.js";
 
 export default async function handler(req: any, res: any) {
   console.log(`[Generate-Exam] Início da requisição. Método: ${req.method}`);

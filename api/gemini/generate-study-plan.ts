@@ -1,7 +1,7 @@
 import { Type } from "@google/genai";
-import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.ts";
-import { STUDY_PLAN_SYSTEM_INSTRUCTION, getStudyPlanPrompt } from "../../src/services/studyPlanPrompt.ts";
-import { generateMockStudyPlan } from "../../src/mocks/studyPlanMock.ts";
+import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.js";
+import { STUDY_PLAN_SYSTEM_INSTRUCTION, getStudyPlanPrompt } from "../../src/services/studyPlanPrompt.js";
+import { generateMockStudyPlan } from "../../src/mocks/studyPlanMock.js";
 
 export default async function handler(req: any, res: any) {
   console.log(`[Generate-Study-Plan] Início da requisição. Método: ${req.method}`);

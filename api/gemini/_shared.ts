@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { withRetry as aiRetry } from "../../src/utils/aiRetry.ts";
+import { withRetry as aiRetry } from "../../src/utils/aiRetry.js";
 
 export const modelName = "gemini-3-flash-preview";
 

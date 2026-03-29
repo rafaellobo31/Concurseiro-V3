@@ -1,7 +1,7 @@
 import { Type } from "@google/genai";
-import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.ts";
-import { buildCorrectionPrompt } from "../../src/prompts/correctionPrompt.ts";
-import { generateMockCorrection } from "../../src/mocks/correctionMock.ts";
+import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.js";
+import { buildCorrectionPrompt } from "../../src/prompts/correctionPrompt.js";
+import { generateMockCorrection } from "../../src/mocks/correctionMock.js";
 
 export default async function handler(req: any, res: any) {
   console.log(`[Correct-Exam] Início da requisição. Método: ${req.method}`);
