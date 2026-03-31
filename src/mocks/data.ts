@@ -4,6 +4,7 @@ export const MOCK_USER: User = {
   id: 'user-123',
   email: 'estudante@concurseiro.com',
   name: 'João Silva',
+  plan: 'free',
   isPro: false,
   avatarUrl: 'https://picsum.photos/seed/user/200/200',
 };

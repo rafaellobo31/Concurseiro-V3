@@ -4,6 +4,8 @@ export type User = {
   name: string;
   isPro: boolean;
   avatarUrl?: string;
+  plan?: 'free' | 'pro';
+  createdAt?: string;
 };
 
 export type Alternative = {

@@ -11,6 +11,7 @@ import ResultsPage from './pages/ResultsPage';
 import HistoryPage from './pages/HistoryPage';
 import HistoryDetailPage from './pages/HistoryDetailPage';
 import EditalSimuladoPage from './pages/EditalSimuladoPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   return (
@@ -31,7 +32,7 @@ export default function App() {
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/history/:id" element={<HistoryDetailPage />} />
             <Route path="/edital-simulado" element={<EditalSimuladoPage />} />
-            <Route path="/profile" element={<div className="p-10 text-center">Página de Perfil em construção.</div>} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
 
           {/* Full Screen Exam Session - Unified Route */}

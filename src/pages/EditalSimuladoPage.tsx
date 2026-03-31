@@ -8,6 +8,7 @@ import { EditalSimuladoConfig } from '../components/EditalSimuladoConfig';
 import { editalService } from '../services/editalService';
 import { editalExamService } from '../services/editalExamService';
 import { EditalAnalysis } from '../types/edital';
+import { PlanGate } from '../components/PlanGate';
 
 export default function EditalSimuladoPage() {
   const navigate = useNavigate();
@@ -104,84 +105,87 @@ export default function EditalSimuladoPage() {
         </p>
       </div>
 
-      <AnimatePresence mode="wait">
-        {step === 'upload' && (
-          <motion.div
-            key="upload-step"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <EditalUploadCard onUpload={handleUpload} isAnalyzing={isAnalyzing} retryMessage={retryMessage} />
-            
-            {error && (
-              <div className="mt-6 p-4 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-3 text-red-600">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <p className="text-sm font-medium">{error}</p>
+      <PlanGate feature="edital_mode">
+        <AnimatePresence mode="wait">
+          {step === 'upload' && (
+            <motion.div
+              key="upload-step"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <EditalUploadCard onUpload={handleUpload} isAnalyzing={isAnalyzing} retryMessage={retryMessage} />
+              
+              {error && (
+                <div className="mt-6 p-4 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-3 text-red-600">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {step === 'analysis' && analysis && (
+            <motion.div
+              key="analysis-step"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <EditalAnalysisSummary 
+                analysis={analysis} 
+                onConfirm={handleConfirmAnalysis} 
+                onCancel={() => setStep('upload')} 
+              />
+            </motion.div>
+          )}
+
+          {step === 'config' && analysis && (
+            <motion.div
+              key="config-step"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <EditalSimuladoConfig
+                analysis={analysis}
+                selectedSubjects={selectedSubjects}
+                onToggleSubject={toggleSubject}
+                onSelectAll={() => setSelectedSubjects(analysis.materias.map(m => m.nome))}
+                onDeselectAll={() => setSelectedSubjects([])}
+                selectedQuestionCount={selectedQuestionCount}
+                onSelectQuestionCount={setSelectedQuestionCount}
+                onGenerate={handleGenerate}
+                onBack={() => setStep('analysis')}
+                isGenerating={isGenerating}
+              />
+            </motion.div>
+          )}
+
+          {step === 'generating' && (
+            <motion.div
+              key="generating-step"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-20 space-y-6"
+            >
+              <div className="relative">
+                <div className="w-24 h-24 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <FileText className="text-indigo-600 w-8 h-8" />
+                </div>
               </div>
-            )}
-          </motion.div>
-        )}
-
-        {step === 'analysis' && analysis && (
-          <motion.div
-            key="analysis-step"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
-            <EditalAnalysisSummary 
-              analysis={analysis} 
-              onConfirm={handleConfirmAnalysis} 
-              onCancel={() => setStep('upload')} 
-            />
-          </motion.div>
-        )}
-
-        {step === 'config' && analysis && (
-          <motion.div
-            key="config-step"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
-            <EditalSimuladoConfig
-              analysis={analysis}
-              selectedSubjects={selectedSubjects}
-              onToggleSubject={toggleSubject}
-              onSelectAll={() => setSelectedSubjects(analysis.materias.map(m => m.nome))}
-              onDeselectAll={() => setSelectedSubjects([])}
-              selectedQuestionCount={selectedQuestionCount}
-              onSelectQuestionCount={setSelectedQuestionCount}
-              onGenerate={handleGenerate}
-              onBack={() => setStep('analysis')}
-              isGenerating={isGenerating}
-            />
-          </motion.div>
-        )}
-
-        {step === 'generating' && (
-          <motion.div
-            key="generating-step"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 space-y-6"
-          >
-            <div className="relative">
-              <div className="w-24 h-24 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <FileText className="text-indigo-600 w-8 h-8" />
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-bold text-gray-900">Gerando seu Simulado</h3>
+                <p className="text-indigo-600 font-medium animate-pulse">
+                  {retryMessage || "Selecionando as melhores questões para o seu edital..."}
+                </p>
               </div>
-            </div>
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-bold text-gray-900">Gerando seu Simulado</h3>
-              <p className="text-indigo-600 font-medium animate-pulse">
-                {retryMessage || "Selecionando as melhores questões para o seu edital..."}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </PlanGate>
     </div>
   );
 }
+

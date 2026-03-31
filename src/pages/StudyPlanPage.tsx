@@ -6,6 +6,7 @@ import { generateStudyPlan } from '../services/studyPlanService';
 import { dashboardAnalyticsService } from '../services/dashboardAnalyticsService';
 import { Sparkles, Layout, ShieldCheck, GraduationCap, BrainCircuit, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { PlanGate } from '../components/PlanGate';
 
 const LOADING_MESSAGES = [
   "Analisando seu desempenho real...",
@@ -88,76 +89,78 @@ export default function StudyPlanPage() {
           </div>
         )}
 
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col items-center justify-center py-20 space-y-8"
-            >
-              <div className="relative">
-                <div className="absolute inset-0 bg-indigo-200 rounded-full blur-2xl opacity-20 animate-pulse" />
-                <div className="relative bg-white p-8 rounded-full shadow-xl border border-indigo-50">
-                  <BrainCircuit className="w-16 h-16 text-indigo-600 animate-pulse" />
+        <PlanGate feature="study_plan_pro">
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col items-center justify-center py-20 space-y-8"
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 bg-indigo-200 rounded-full blur-2xl opacity-20 animate-pulse" />
+                  <div className="relative bg-white p-8 rounded-full shadow-xl border border-indigo-50">
+                    <BrainCircuit className="w-16 h-16 text-indigo-600 animate-pulse" />
+                  </div>
+                  <div className="absolute -top-2 -right-2">
+                    <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                  </div>
                 </div>
-                <div className="absolute -top-2 -right-2">
-                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                
+                <div className="text-center space-y-3">
+                  <h2 className="text-2xl font-bold text-gray-900">Gerando sua Estratégia</h2>
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={loadingMessageIndex}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-indigo-600 font-medium"
+                    >
+                      {retryMessage || LOADING_MESSAGES[loadingMessageIndex]}
+                    </motion.p>
+                  </AnimatePresence>
                 </div>
-              </div>
-              
-              <div className="text-center space-y-3">
-                <h2 className="text-2xl font-bold text-gray-900">Gerando sua Estratégia</h2>
-                <AnimatePresence mode="wait">
-                  <motion.p
-                    key={loadingMessageIndex}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="text-indigo-600 font-medium"
-                  >
-                    {retryMessage || LOADING_MESSAGES[loadingMessageIndex]}
-                  </motion.p>
-                </AnimatePresence>
-              </div>
-              
-              {retryMessage && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 text-sm font-bold animate-pulse">
-                  <BrainCircuit className="w-4 h-4" />
-                  IA sobrecarregada, tentando novamente...
+                
+                {retryMessage && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 text-sm font-bold animate-pulse">
+                    <BrainCircuit className="w-4 h-4" />
+                    IA sobrecarregada, tentando novamente...
+                  </div>
+                )}
+                
+                <div className="w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-indigo-600"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 15, ease: "linear" }}
+                  />
                 </div>
-              )}
-              
-              <div className="w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-indigo-600"
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 15, ease: "linear" }}
-                />
-              </div>
-            </motion.div>
-          ) : !plan ? (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <StudyPlanForm onSubmit={handleGeneratePlan} loading={loading} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="result"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              <StudyPlanResult plan={plan} input={userInput!} onBack={() => setPlan(null)} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            ) : !plan ? (
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <StudyPlanForm onSubmit={handleGeneratePlan} loading={loading} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="result"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <StudyPlanResult plan={plan} input={userInput!} onBack={() => setPlan(null)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </PlanGate>
 
         {/* Features Section (only visible when no plan and not loading) */}
         {!plan && !loading && (
@@ -197,3 +200,4 @@ export default function StudyPlanPage() {
     </div>
   );
 }
+

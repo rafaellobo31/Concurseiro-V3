@@ -7,32 +7,27 @@ export const dashboardService = {
    * Calcula as métricas do dashboard com base no histórico real e análise detalhada V2.
    */
   async getDashboardMetrics(): Promise<DashboardMetrics> {
-    const history = await historyService.getHistoryItems();
-    const analyticsV2 = await dashboardAnalyticsService.getDashboardAnalytics();
+    console.log('[DashboardService] getDashboardMetrics iniciado.');
     
-    if (history.length === 0 || !analyticsV2) {
-      return {
-        totalSimulados: 0,
-        mediaPercentual: 0,
-        melhorPercentual: 0,
-        piorPercentual: 0,
-        ultimoPercentual: 0,
-        totalQuestoesRespondidas: 0,
-        totalAcertos: 0,
-        totalErros: 0,
-        atividadeRecente: [],
-        tendenciaRecente: 'estabilidade',
-        analisePorMateria: { melhor: null, pior: null },
-        analisePorConcurso: { melhor: null, pior: null },
-        insights: {
-          pontosFortes: [],
-          pontosFracos: [],
-          recomendacoes: []
-        },
-        assuntosCriticos: [],
-        desempenhoPorMateria: []
-      };
-    }
+    try {
+      // Add a safety timeout for the whole operation
+      const metricsPromise = (async () => {
+        const history = await historyService.getHistoryItems();
+        const analyticsV2 = await dashboardAnalyticsService.getDashboardAnalytics();
+        return { history, analyticsV2 };
+      })();
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout ao carregar métricas do dashboard')), 8000)
+      );
+
+      const { history, analyticsV2 } = await Promise.race([metricsPromise, timeoutPromise]) as any;
+      console.log('[DashboardService] Dados carregados. Histórico:', history.length, 'Analytics:', !!analyticsV2);
+      
+      if (history.length === 0 || !analyticsV2) {
+        console.log('[DashboardService] Retornando métricas vazias.');
+        return this.getEmptyMetrics();
+      }
 
     const totalSimulados = analyticsV2.visaoGeral.totalSimulados;
     const mediaPercentual = analyticsV2.visaoGeral.mediaGeral;
@@ -73,36 +68,64 @@ export const dashboardService = {
       } : null
     };
 
-    // Consolidar Insights
-    const pontosFortes = [...analyticsV2.pontosFortes];
-    const pontosFracos = [...analyticsV2.pontosFracos];
-    const recomendacoes = [analyticsV2.recomendacao];
+      // Consolidar Insights
+      const pontosFortes = [...analyticsV2.pontosFortes];
+      const pontosFracos = [...analyticsV2.pontosFracos];
+      const recomendacoes = [analyticsV2.recomendacao];
 
-    // Adicionar recomendações extras baseadas em concursos se houver
-    if (analisePorConcurso.pior && analisePorConcurso.pior.percentual < 50) {
-      recomendacoes.push(`Atenção especial ao concurso ${analisePorConcurso.pior.nome}.`);
+      // Adicionar recomendações extras baseadas em concursos se houver
+      if (analisePorConcurso.pior && analisePorConcurso.pior.percentual < 50) {
+        recomendacoes.push(`Atenção especial ao concurso ${analisePorConcurso.pior.nome}.`);
+      }
+
+      return {
+        totalSimulados,
+        mediaPercentual,
+        melhorPercentual,
+        piorPercentual,
+        ultimoPercentual,
+        totalQuestoesRespondidas: history.reduce((acc: number, curr: any) => acc + curr.quantidadeQuestoes, 0),
+        totalAcertos: history.reduce((acc: number, curr: any) => acc + curr.acertos, 0),
+        totalErros: history.reduce((acc: number, curr: any) => acc + curr.erros, 0),
+        atividadeRecente,
+        tendenciaRecente,
+        analisePorMateria,
+        analisePorConcurso,
+        insights: {
+          pontosFortes: pontosFortes.slice(0, 3),
+          pontosFracos: pontosFracos.slice(0, 3),
+          recomendacoes: recomendacoes.slice(0, 3)
+        },
+        assuntosCriticos: analyticsV2.assuntosCriticos,
+        desempenhoPorMateria: analyticsV2.desempenhoPorMateria
+      };
+    } catch (err) {
+      console.error('[DashboardService] Erro ao carregar métricas:', err);
+      return this.getEmptyMetrics();
     }
+  },
 
+  getEmptyMetrics(): DashboardMetrics {
     return {
-      totalSimulados,
-      mediaPercentual,
-      melhorPercentual,
-      piorPercentual,
-      ultimoPercentual,
-      totalQuestoesRespondidas: history.reduce((acc, curr) => acc + curr.quantidadeQuestoes, 0),
-      totalAcertos: history.reduce((acc, curr) => acc + curr.acertos, 0),
-      totalErros: history.reduce((acc, curr) => acc + curr.erros, 0),
-      atividadeRecente,
-      tendenciaRecente,
-      analisePorMateria,
-      analisePorConcurso,
+      totalSimulados: 0,
+      mediaPercentual: 0,
+      melhorPercentual: 0,
+      piorPercentual: 0,
+      ultimoPercentual: 0,
+      totalQuestoesRespondidas: 0,
+      totalAcertos: 0,
+      totalErros: 0,
+      atividadeRecente: [],
+      tendenciaRecente: 'estabilidade',
+      analisePorMateria: { melhor: null, pior: null },
+      analisePorConcurso: { melhor: null, pior: null },
       insights: {
-        pontosFortes: pontosFortes.slice(0, 3),
-        pontosFracos: pontosFracos.slice(0, 3),
-        recomendacoes: recomendacoes.slice(0, 3)
+        pontosFortes: [],
+        pontosFracos: [],
+        recomendacoes: []
       },
-      assuntosCriticos: analyticsV2.assuntosCriticos,
-      desempenhoPorMateria: analyticsV2.desempenhoPorMateria
+      assuntosCriticos: [],
+      desempenhoPorMateria: []
     };
   }
 };

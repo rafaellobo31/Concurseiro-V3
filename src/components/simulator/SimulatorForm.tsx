@@ -2,8 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { SimulatorInput } from '../../types/simulator';
 import { CONCURSOS_CATEGORIAS_MOCK, CONCURSOS_MOCK } from '../../mocks/concursosMock';
 import { MOCK_BANCAS } from '../../mocks/data';
-import { Target, BookOpen, Building2, ListChecks, BarChart3, Sparkles, ArrowRight, Briefcase } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Target, BookOpen, Building2, ListChecks, BarChart3, Sparkles, ArrowRight, Briefcase, Crown, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { usePlan } from '../../hooks/usePlan';
+import { UpgradeModal } from '../UpgradeModal';
 
 interface SimulatorFormProps {
   onSubmit: (input: SimulatorInput) => void;
@@ -24,6 +26,8 @@ const MATERIAS_LIST = [
 ];
 
 export function SimulatorForm({ onSubmit, loading }: SimulatorFormProps) {
+  const { isPro, maxQuestions } = usePlan();
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [formData, setFormData] = useState<SimulatorInput>({
     modoSimulado: 'concurso',
     concurso: '',
@@ -31,7 +35,7 @@ export function SimulatorForm({ onSubmit, loading }: SimulatorFormProps) {
     materia: '',
     banca: '',
     tipoQuestao: 'multipla_escolha',
-    quantidade: 10,
+    quantidade: isPro ? 10 : 4,
     nivel: 'medio'
   });
 
@@ -49,17 +53,42 @@ export function SimulatorForm({ onSubmit, loading }: SimulatorFormProps) {
     });
   };
 
+  const handleQuantityChange = (val: number) => {
+    if (!isPro && val > 4) {
+      setIsUpgradeModalOpen(true);
+      setFormData({ ...formData, quantidade: 4 });
+      return;
+    }
+    setFormData({ ...formData, quantidade: val });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isPro && formData.quantidade > 4) {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
     onSubmit(formData);
   };
 
   return (
     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
       <div className="p-8 md:p-10">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Configure seu Simulado</h2>
-          <p className="text-gray-500">Personalize o nível, a banca e a matéria para um treino focado.</p>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Configure seu Simulado</h2>
+            <p className="text-gray-500">Personalize o nível, a banca e a matéria para um treino focado.</p>
+          </div>
+          {!isPro && (
+            <button 
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl text-sm font-bold border border-amber-100 hover:bg-amber-100 transition-colors"
+            >
+              <Crown className="w-4 h-4" />
+              Seja Pro
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -196,18 +225,44 @@ export function SimulatorForm({ onSubmit, loading }: SimulatorFormProps) {
 
             {/* Quantidade */}
             <div className="space-y-3">
-              <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-indigo-600" />
-                Quantidade de Questões
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="30"
-                value={formData.quantidade}
-                onChange={(e) => setFormData({ ...formData, quantidade: parseInt(e.target.value) })}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white text-gray-700"
-              />
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-indigo-600" />
+                  Quantidade de Questões
+                </label>
+                {!isPro && (
+                  <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                    Limite Free: 4
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  max={maxQuestions}
+                  value={formData.quantidade}
+                  onChange={(e) => handleQuantityChange(parseInt(e.target.value))}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white text-gray-700 ${
+                    !isPro && formData.quantidade > 4 ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
+                  }`}
+                />
+                {!isPro && formData.quantidade >= 4 && (
+                  <div className="mt-2 flex items-start gap-2 text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-100">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs leading-relaxed">
+                      No plano gratuito você pode gerar simulados de até 4 questões. 
+                      <button 
+                        type="button"
+                        onClick={() => setIsUpgradeModalOpen(true)}
+                        className="ml-1 font-bold underline hover:text-amber-800"
+                      >
+                        Faça upgrade para o Pro para liberar até 50 questões.
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Nível */}
@@ -254,6 +309,13 @@ export function SimulatorForm({ onSubmit, loading }: SimulatorFormProps) {
           </div>
         </form>
       </div>
+
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        featureName="Simulados Longos"
+      />
     </div>
   );
 }
+

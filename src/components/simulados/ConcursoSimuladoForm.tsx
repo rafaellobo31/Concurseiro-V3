@@ -4,9 +4,11 @@ import { CONCURSOS_CATEGORIAS_MOCK, CONCURSOS_MOCK } from '../../mocks/concursos
 import { MOCK_BANCAS, MOCK_LEVELS } from '../../mocks/data';
 import { Sparkles, ArrowRight, Building2, Landmark, ListChecks, Briefcase, BarChart3, HelpCircle, ChevronLeft } from 'lucide-react';
 import { ExamInput } from '../../types/exam';
+import { usePlan } from '../../hooks/usePlan';
 
 export function ConcursoSimuladoForm() {
   const navigate = useNavigate();
+  const { isFree } = usePlan();
   const [loading, setLoading] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,7 +16,7 @@ export function ConcursoSimuladoForm() {
     cargoId: '',
     banca: '',
     tipoQuestao: 'multipla_escolha',
-    quantidade: '10',
+    quantidade: isFree ? '4' : '10',
     nivel: 'Médio',
     // Manual fields
     customConcurso: '',
@@ -308,19 +310,29 @@ export function ConcursoSimuladoForm() {
 
         {/* Quantidade */}
         <div className="space-y-2">
-          <label className="text-sm font-bold text-gray-700">
+          <label className="text-sm font-bold text-gray-700 flex items-center justify-between">
             Quantidade de Questões
+            {isFree && (
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                Limite Free: 4
+              </span>
+            )}
           </label>
           <select
             value={formData.quantidade}
             onChange={(e) => setFormData({ ...formData, quantidade: e.target.value })}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
           >
-            <option value="5">5 questões</option>
-            <option value="10">10 questões</option>
-            <option value="20">20 questões</option>
-            <option value="50">50 questões</option>
+            <option value="4">4 questões</option>
+            <option value="10" disabled={isFree}>10 questões {isFree && '(Pro)'}</option>
+            <option value="20" disabled={isFree}>20 questões {isFree && '(Pro)'}</option>
+            <option value="50" disabled={isFree}>50 questões {isFree && '(Pro)'}</option>
           </select>
+          {isFree && (
+            <p className="text-[10px] text-amber-600 font-medium">
+              Simulados maiores fazem parte do plano Pro.
+            </p>
+          )}
         </div>
       </div>
 

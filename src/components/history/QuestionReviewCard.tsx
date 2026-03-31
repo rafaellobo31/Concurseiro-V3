@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, BookOpen, MessageSquare, Info, Landmark, Calendar, Tag } from 'lucide-react';
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp, BookOpen, MessageSquare, Info, Landmark, Calendar, Tag, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { cn } from '../../utils/cn';
 import { QuestionReviewData } from '../../services/examReviewService';
+import { usePlan } from '../../hooks/usePlan';
 
 interface QuestionReviewCardProps {
   question: QuestionReviewData;
@@ -11,6 +13,7 @@ interface QuestionReviewCardProps {
 
 export const QuestionReviewCard: React.FC<QuestionReviewCardProps> = ({ question, index }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { isFree } = usePlan();
 
   return (
     <div className={cn(
@@ -153,7 +156,7 @@ export const QuestionReviewCard: React.FC<QuestionReviewCardProps> = ({ question
               )}
 
               {/* Explanation Section */}
-              <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+              <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6 relative overflow-hidden">
                 <div className="flex items-center gap-3 text-slate-900">
                   <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
                     <Info className="w-5 h-5" />
@@ -161,9 +164,30 @@ export const QuestionReviewCard: React.FC<QuestionReviewCardProps> = ({ question
                   <h4 className="text-lg font-black uppercase tracking-widest">Explicação Pedagógica</h4>
                 </div>
                 <div className="h-px bg-slate-100 w-full" />
-                <p className="text-slate-600 text-lg leading-loose whitespace-pre-wrap font-medium">
-                  {question.explicacao}
-                </p>
+                
+                {isFree ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center space-y-6">
+                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center shadow-sm">
+                      <Lock size={32} />
+                    </div>
+                    <div className="space-y-2">
+                      <h5 className="text-xl font-bold text-slate-900">Conteúdo Exclusivo Pro</h5>
+                      <p className="text-slate-500 max-w-sm mx-auto text-lg">
+                        Explicação pedagógica completa disponível no plano Pro.
+                      </p>
+                    </div>
+                    <Link 
+                      to="/profile" 
+                      className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+                    >
+                      Ver Planos
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-slate-600 text-lg leading-loose whitespace-pre-wrap font-medium">
+                    {question.explicacao}
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>

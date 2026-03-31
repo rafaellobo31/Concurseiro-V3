@@ -17,15 +17,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[AuthProvider] Inicializando AuthProvider...');
+    
+    let isMounted = true;
+
     // Initial session check
     async function initAuth() {
+      console.log('[AuthProvider] Iniciando initAuth...');
+      const safetyTimeout = setTimeout(() => {
+        if (isMounted) {
+          console.warn('[AuthProvider] Safety timeout atingido! Forçando loading false.');
+          setLoading(false);
+        }
+      }, 10000);
+
       try {
         const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+        
+        if (isMounted) {
+          console.log('[AuthProvider] initAuth concluído. Usuário:', currentUser?.id || 'null');
+          setUser(currentUser);
+        }
       } catch (error) {
-        console.error('Auth init error:', error);
+        console.error('[AuthProvider] Erro no initAuth:', error);
       } finally {
-        setLoading(false);
+        clearTimeout(safetyTimeout);
+        if (isMounted) {
+          console.log('[AuthProvider] Finalizando loading no initAuth.');
+          setLoading(false);
+        }
       }
     }
 
@@ -33,11 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for changes
     const unsubscribe = authService.onAuthStateChange((updatedUser) => {
-      setUser(updatedUser);
-      setLoading(false);
+      if (isMounted) {
+        console.log('[AuthProvider] Mudança de estado detectada. Novo usuário:', updatedUser?.id || 'null');
+        setUser(updatedUser);
+        console.log('[AuthProvider] Finalizando loading no onAuthStateChange.');
+        setLoading(false);
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('[AuthProvider] Desmontando AuthProvider...');
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
