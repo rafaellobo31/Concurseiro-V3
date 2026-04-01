@@ -1,13 +1,45 @@
 import { Sparkles, Check, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 interface UpgradeCardProps {
   isPro: boolean;
 }
 
 export const UpgradeCard = ({ isPro }: UpgradeCardProps) => {
-  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const handleUpgrade = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Erro ao criar sessão de checkout');
+      }
+    } catch (error) {
+      console.error('Upgrade error:', error);
+      alert('Não foi possível iniciar o checkout. Tente novamente mais tarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (isPro) return null;
 
@@ -44,42 +76,25 @@ export const UpgradeCard = ({ isPro }: UpgradeCardProps) => {
 
           <div className="pt-4">
             <button 
-              onClick={() => setShowModal(true)}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 group"
+              onClick={handleUpgrade}
+              disabled={loading}
+              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 group"
             >
-              Seja Pro agora
-              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  Seja Pro agora
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </div>
         </div>
       </motion.div>
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6"
-          >
-            <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
-              <Sparkles size={40} />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-slate-900">Em breve disponível!</h3>
-              <p className="text-slate-600">
-                Estamos preparando a melhor experiência de assinatura para você. 
-                Fique atento às novidades!
-              </p>
-            </div>
-            <button 
-              onClick={() => setShowModal(false)}
-              className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors"
-            >
-              Entendido
-            </button>
-          </motion.div>
-        </div>
-      )}
     </>
   );
 };

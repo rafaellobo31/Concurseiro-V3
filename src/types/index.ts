@@ -5,6 +5,7 @@ export type User = {
   isPro: boolean;
   avatarUrl?: string;
   plan?: 'free' | 'pro';
+  stripe_customer_id?: string;
   createdAt?: string;
 };
 

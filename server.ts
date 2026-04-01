@@ -24,12 +24,20 @@ import analyzeEditalHandler from "./api/gemini/analyze-edital.js";
 import generateStudyPlanHandler from "./api/gemini/generate-study-plan.js";
 import generateEditalExamHandler from "./api/gemini/generate-edital-exam.js";
 
+// Import Stripe handlers
+import createCheckoutSession from "./api/stripe/create-checkout-session.js";
+import stripeWebhook from "./api/stripe/webhook.js";
+import createCustomerPortalSession from "./api/stripe/create-customer-portal-session.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Stripe Webhook needs raw body
+  app.post("/api/stripe/webhook", express.raw({ type: 'application/json' }), stripeWebhook);
 
   app.use(express.json({ limit: '50mb' }));
 
@@ -47,6 +55,10 @@ async function startServer() {
 
   // 5. Generate Edital Exam
   app.post("/api/gemini/generate-edital-exam", generateEditalExamHandler);
+
+  // Stripe routes
+  app.post("/api/stripe/create-checkout-session", createCheckoutSession);
+  app.post("/api/stripe/create-customer-portal-session", createCustomerPortalSession);
 
   // Vite middleware
   if (process.env.NODE_ENV !== "production") {
