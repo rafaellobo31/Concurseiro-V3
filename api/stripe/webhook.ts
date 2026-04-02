@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { stripe, supabase } from './_shared.js';
+import { stripe, supabase, stripeWebhookSecret } from './_shared.js';
 import Stripe from 'stripe';
 
 export default async function stripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = stripeWebhookSecret;
 
   let event: Stripe.Event;
 
