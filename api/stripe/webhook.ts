@@ -10,9 +10,13 @@ export const config = {
 };
 
 // Helper para ler o corpo bruto da requisição
-async function getRawBody(readable: any): Promise<Buffer> {
+async function getRawBody(req: Request): Promise<Buffer> {
+  if (Buffer.isBuffer(req.body)) {
+    return req.body;
+  }
+  
   const chunks = [];
-  for await (const chunk of readable) {
+  for await (const chunk of req) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
   return Buffer.concat(chunks);
@@ -20,8 +24,10 @@ async function getRawBody(readable: any): Promise<Buffer> {
 
 export default async function stripeWebhook(req: Request, res: Response) {
   console.log('[Stripe Webhook] Recebido novo evento');
+  console.log('[Stripe Webhook] Método:', req.method);
+  
   const sig = req.headers['stripe-signature'];
-  const webhookSecret = stripeWebhookSecret;
+  const webhookSecret = stripeWebhookSecret.trim();
 
   let event: Stripe.Event;
 
@@ -32,16 +38,10 @@ export default async function stripeWebhook(req: Request, res: Response) {
     }
 
     // Obtém o corpo bruto da requisição
-    let rawBody: Buffer;
-    console.log('[Stripe Webhook] Tipo do req.body:', typeof req.body, 'IsBuffer:', Buffer.isBuffer(req.body));
+    const rawBody = await getRawBody(req);
     
-    if (Buffer.isBuffer(req.body)) {
-      rawBody = req.body;
-    } else {
-      rawBody = await getRawBody(req);
-    }
-
     console.log('[Stripe Webhook] Raw body recebido (tamanho):', rawBody.length);
+    console.log('[Stripe Webhook] Buffer.isBuffer(rawBody):', Buffer.isBuffer(rawBody));
     console.log('[Stripe Webhook] Assinatura recebida:', sig);
 
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
@@ -59,8 +59,10 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const customerId = session.customer as string;
 
         console.log(`[Stripe Webhook] Checkout concluído. UserID: ${userId}, CustomerID: ${customerId}`);
+        console.log(`[Stripe Webhook] Metadata:`, JSON.stringify(session.metadata));
 
         if (userId) {
+          console.log(`[Stripe Webhook] Iniciando update do plan para o usuário ${userId}`);
           const { error } = await supabase
             .from('profiles')
             .update({ 
@@ -79,6 +81,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
         }
         break;
       }
+      // ... rest of the cases ...
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;

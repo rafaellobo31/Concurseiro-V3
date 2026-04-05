@@ -1,10 +1,51 @@
 import { Request, Response } from 'express';
 import { stripe, APP_URL, stripePriceIdPro } from './_shared.js';
 
+// Helper para ler o corpo da requisição se não estiver parseado
+async function getParsedBody(req: Request): Promise<any> {
+  if (req.body && typeof req.body === 'object') {
+    return req.body;
+  }
+  
+  if (typeof req.body === 'string') {
+    try {
+      return JSON.parse(req.body);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Se req.body estiver vazio, tenta ler o stream
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  const rawBody = Buffer.concat(chunks).toString('utf8');
+  
+  if (!rawBody) return {};
+  
+  try {
+    return JSON.parse(rawBody);
+  } catch (e) {
+    console.error('[Stripe] Erro ao parsear body manual:', e);
+    return {};
+  }
+}
+
 export default async function createCheckoutSession(req: Request, res: Response) {
   console.log('[Stripe] Início da criação da checkout session');
+  console.log('[Stripe] Método:', req.method);
+  
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const { userId, email } = req.body;
+    const body = await getParsedBody(req);
+    console.log('[Stripe] Body recebido:', JSON.stringify(body));
+    
+    const { userId, email } = body;
+    console.log('[Stripe] userId:', userId, 'email:', email);
 
     if (!userId || !email) {
       console.warn('[Stripe] Falha ao criar checkout session: userId ou email ausentes');
