@@ -2,6 +2,22 @@ import { Request, Response } from 'express';
 import { stripe, supabase, stripeWebhookSecret } from './_shared.js';
 import Stripe from 'stripe';
 
+// Desabilita o body parser do Vercel para este endpoint
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// Helper para ler o corpo bruto da requisição
+async function getRawBody(readable: any): Promise<Buffer> {
+  const chunks = [];
+  for await (const chunk of readable) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
 export default async function stripeWebhook(req: Request, res: Response) {
   console.log('[Stripe Webhook] Recebido novo evento');
   const sig = req.headers['stripe-signature'];
@@ -14,8 +30,22 @@ export default async function stripeWebhook(req: Request, res: Response) {
       console.error('[Stripe Webhook] Falha: stripe-signature ou webhook secret ausentes');
       throw new Error('Missing stripe-signature or webhook secret');
     }
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    console.log(`[Stripe Webhook] Evento identificado: ${event.type}`);
+
+    // Obtém o corpo bruto da requisição
+    let rawBody: Buffer;
+    console.log('[Stripe Webhook] Tipo do req.body:', typeof req.body, 'IsBuffer:', Buffer.isBuffer(req.body));
+    
+    if (Buffer.isBuffer(req.body)) {
+      rawBody = req.body;
+    } else {
+      rawBody = await getRawBody(req);
+    }
+
+    console.log('[Stripe Webhook] Raw body recebido (tamanho):', rawBody.length);
+    console.log('[Stripe Webhook] Assinatura recebida:', sig);
+
+    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    console.log(`[Stripe Webhook] Evento validado com sucesso: ${event.type}`);
   } catch (err: any) {
     console.error(`[Stripe Webhook] Erro na verificação da assinatura: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
