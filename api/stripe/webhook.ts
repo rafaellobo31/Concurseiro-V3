@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { stripe, supabase, stripeWebhookSecret } from './_shared.js';
+import { stripe, supabaseAdmin, stripeWebhookSecret } from './_shared.js';
 import Stripe from 'stripe';
 
 // Desabilita o body parser do Vercel para este endpoint
@@ -62,19 +62,33 @@ export default async function stripeWebhook(req: Request, res: Response) {
         console.log(`[Stripe Webhook] Metadata:`, JSON.stringify(session.metadata));
 
         if (userId) {
-          console.log(`[Stripe Webhook] Iniciando update do plan para o usuário ${userId}`);
-          const { error } = await supabase
+          console.log(`[Stripe Webhook] Iniciando update do plan para o usuário ${userId} usando Service Role Client`);
+          
+          const { data, error, count } = await supabaseAdmin
             .from('profiles')
             .update({ 
               plan: 'pro',
               stripe_customer_id: customerId 
             })
-            .eq('id', userId);
+            .eq('id', userId)
+            .select(); // Retorna os dados para verificação
+          
+          console.log(`[Stripe Webhook] Update retornado. Erro: ${error ? JSON.stringify(error) : 'null'}, Linhas afetadas: ${count ?? (data?.length || 0)}`);
           
           if (error) {
             console.error(`[Stripe Webhook] Erro ao atualizar perfil do usuário ${userId}:`, error);
+          } else if (!data || data.length === 0) {
+            console.warn(`[Stripe Webhook] Nenhuma linha foi atualizada para o usuário ${userId}. Verifique se o ID existe na tabela profiles.`);
           } else {
-            console.log(`[Stripe Webhook] Usuário ${userId} atualizado para o plano PRO com sucesso`);
+            const updatedProfile = data[0];
+            console.log(`[Stripe Webhook] Usuário ${userId} atualizado com sucesso.`);
+            console.log(`[Stripe Webhook] Profile final:`, JSON.stringify(updatedProfile));
+            
+            if (updatedProfile.plan === 'pro' && updatedProfile.stripe_customer_id === customerId) {
+              console.log(`[Stripe Webhook] Verificação de sucesso: Plan=pro e CustomerID=${customerId} confirmados.`);
+            } else {
+              console.error(`[Stripe Webhook] Verificação de falha: Dados retornados não batem com o esperado. Plan=${updatedProfile.plan}, CustomerID=${updatedProfile.stripe_customer_id}`);
+            }
           }
         } else {
           console.warn('[Stripe Webhook] Checkout concluído mas supabase_user_id não encontrado no metadata');
@@ -91,7 +105,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
         console.log(`[Stripe Webhook] Assinatura atualizada. CustomerID: ${customerId}, Status: ${status}`);
 
         // Find user by stripe_customer_id
-        const { data: profile, error: findError } = await supabase
+        const { data: profile, error: findError } = await supabaseAdmin
           .from('profiles')
           .select('id')
           .eq('stripe_customer_id', customerId)
@@ -101,7 +115,9 @@ export default async function stripeWebhook(req: Request, res: Response) {
           console.error(`[Stripe Webhook] Erro ao buscar perfil pelo customerId ${customerId}:`, findError);
         } else if (profile) {
           const plan = (status === 'active' || status === 'trialing') ? 'pro' : 'free';
-          const { error: updateError } = await supabase
+          console.log(`[Stripe Webhook] Atualizando plano do usuário ${profile.id} para ${plan}`);
+          
+          const { error: updateError } = await supabaseAdmin
             .from('profiles')
             .update({ plan })
             .eq('id', profile.id);
@@ -121,7 +137,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
 
         console.log(`[Stripe Webhook] Assinatura deletada. CustomerID: ${customerId}`);
 
-        const { data: profile, error: findError } = await supabase
+        const { data: profile, error: findError } = await supabaseAdmin
           .from('profiles')
           .select('id')
           .eq('stripe_customer_id', customerId)
@@ -130,7 +146,8 @@ export default async function stripeWebhook(req: Request, res: Response) {
         if (findError) {
           console.error(`[Stripe Webhook] Erro ao buscar perfil pelo customerId ${customerId}:`, findError);
         } else if (profile) {
-          const { error: updateError } = await supabase
+          console.log(`[Stripe Webhook] Rebaixando usuário ${profile.id} para FREE`);
+          const { error: updateError } = await supabaseAdmin
             .from('profiles')
             .update({ plan: 'free' })
             .eq('id', profile.id);

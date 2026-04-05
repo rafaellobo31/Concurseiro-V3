@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { stripe, APP_URL, supabase } from './_shared.js';
+import { stripe, APP_URL, supabaseAdmin } from './_shared.js';
 
 // Helper para ler o corpo da requisição se não estiver parseado
 async function getParsedBody(req: Request): Promise<any> {
@@ -49,8 +49,8 @@ export default async function createCustomerPortalSession(req: Request, res: Res
       return res.status(400).json({ error: 'Missing userId' });
     }
 
-    // Find customerId from profiles
-    const { data: profile } = await supabase
+    // Find customerId from profiles using admin client
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('stripe_customer_id')
       .eq('id', userId)
