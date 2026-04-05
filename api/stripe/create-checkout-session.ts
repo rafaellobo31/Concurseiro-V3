@@ -20,8 +20,8 @@ export default async function createCheckoutSession(req: Request, res: Response)
         },
       ],
       mode: 'subscription',
-      success_url: `${APP_URL}/profile?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/profile`,
+      success_url: `${APP_URL}/profile?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL}/profile?checkout=cancel`,
       customer_email: email,
       metadata: {
         supabase_user_id: userId,

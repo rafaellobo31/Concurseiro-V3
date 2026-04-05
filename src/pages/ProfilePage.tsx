@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
 import { User } from '../types';
@@ -6,13 +7,17 @@ import { ProfileHeaderCard } from '../components/ProfileHeaderCard';
 import { CurrentPlanCard } from '../components/CurrentPlanCard';
 import { UpgradeCard } from '../components/UpgradeCard';
 import { motion } from 'motion/react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user: authUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  const isCheckoutSuccess = searchParams.get('checkout') === 'success';
 
   useEffect(() => {
     async function loadProfile() {
@@ -23,6 +28,15 @@ export default function ProfilePage() {
         const data = await profileService.getCurrentUserProfile(authUser.id);
         if (data) {
           setProfile(data);
+          
+          // Se acabamos de voltar de um checkout bem-sucedido, mas o plano ainda é free,
+          // podemos tentar recarregar após um pequeno delay para dar tempo ao webhook.
+          if (isCheckoutSuccess && data.plan === 'free') {
+            console.log('Checkout success detected but plan is still free. Retrying in 3s...');
+            setTimeout(loadProfile, 3000);
+          } else if (isCheckoutSuccess && data.plan === 'pro') {
+            setShowSuccessMessage(true);
+          }
         } else {
           setError('Não foi possível carregar os dados do perfil.');
         }
@@ -35,7 +49,7 @@ export default function ProfilePage() {
     }
 
     loadProfile();
-  }, [authUser?.id]);
+  }, [authUser?.id, isCheckoutSuccess]);
 
   if (loading) {
     return (
@@ -76,6 +90,22 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Meu Perfil</h1>
         <p className="text-slate-500">Gerencie sua conta e plano de estudos.</p>
       </motion.div>
+
+      {showSuccessMessage && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-center gap-4 text-emerald-800"
+        >
+          <div className="bg-emerald-500 text-white p-2 rounded-full">
+            <CheckCircle2 size={24} />
+          </div>
+          <div>
+            <h3 className="font-bold">Assinatura Ativada!</h3>
+            <p className="text-sm opacity-90">Parabéns! Você agora é um usuário Pro e tem acesso a todos os recursos.</p>
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 gap-8">
         <ProfileHeaderCard user={profile} />

@@ -21,4 +21,5 @@ export const stripe = new Stripe(stripeSecretKey);
 
 export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-export const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+const rawAppUrl = process.env.APP_URL || 'http://localhost:3000';
+export const APP_URL = rawAppUrl.endsWith('/') ? rawAppUrl.slice(0, -1) : rawAppUrl;
