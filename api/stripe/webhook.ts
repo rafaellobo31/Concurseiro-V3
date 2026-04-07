@@ -57,7 +57,11 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
         const customerId = session.customer as string;
-        const subscriptionId = session.subscription as string;
+        
+        // Garante que pegamos o ID da assinatura mesmo se estiver expandido
+        const subscriptionId = typeof session.subscription === 'string' 
+          ? session.subscription 
+          : (session.subscription as any)?.id;
 
         console.log(`[Stripe Webhook] Checkout concluído. UserID: ${userId}, CustomerID: ${customerId}, SubID: ${subscriptionId}`);
         console.log(`[Stripe Webhook] Metadata:`, JSON.stringify(session.metadata));
@@ -70,22 +74,30 @@ export default async function stripeWebhook(req: Request, res: Response) {
 
           if (subscriptionId) {
             try {
+              console.log(`[Stripe Webhook] Buscando detalhes da assinatura ${subscriptionId}...`);
               const sub = await stripe.subscriptions.retrieve(subscriptionId);
-              subscriptionStatus = sub.status;
+              subscriptionStatus = sub.status || 'active';
               currentPeriodEnd = new Date((sub as any).current_period_end * 1000).toISOString();
+              console.log(`[Stripe Webhook] Assinatura recuperada: Status=${subscriptionStatus}, PeriodEnd=${currentPeriodEnd}`);
             } catch (e) {
               console.error('[Stripe Webhook] Erro ao buscar assinatura:', e);
             }
+          } else {
+            console.warn('[Stripe Webhook] subscriptionId ausente no checkout.session.completed');
           }
+
+          const updatePayload = { 
+            plan: 'pro',
+            stripe_customer_id: customerId,
+            subscription_status: subscriptionStatus,
+            subscription_current_period_end: currentPeriodEnd
+          };
+          
+          console.log(`[Stripe Webhook] Enviando payload ao Supabase para o usuário ${userId}:`, JSON.stringify(updatePayload));
 
           const { data, error, count } = await supabaseAdmin
             .from('profiles')
-            .update({ 
-              plan: 'pro',
-              stripe_customer_id: customerId,
-              subscription_status: subscriptionStatus,
-              subscription_current_period_end: currentPeriodEnd
-            })
+            .update(updatePayload)
             .eq('id', userId)
             .select(); // Retorna os dados para verificação
           
@@ -98,12 +110,12 @@ export default async function stripeWebhook(req: Request, res: Response) {
           } else {
             const updatedProfile = data[0];
             console.log(`[Stripe Webhook] Usuário ${userId} atualizado com sucesso.`);
-            console.log(`[Stripe Webhook] Profile final:`, JSON.stringify(updatedProfile));
+            console.log(`[Stripe Webhook] Profile final no banco:`, JSON.stringify(updatedProfile));
             
-            if (updatedProfile.plan === 'pro' && updatedProfile.stripe_customer_id === customerId) {
-              console.log(`[Stripe Webhook] Verificação de sucesso: Plan=pro e CustomerID=${customerId} confirmados.`);
+            if (updatedProfile.plan === 'pro' && updatedProfile.subscription_status === subscriptionStatus) {
+              console.log(`[Stripe Webhook] Verificação de sucesso: Plan=pro e Status=${subscriptionStatus} confirmados no banco.`);
             } else {
-              console.error(`[Stripe Webhook] Verificação de falha: Dados retornados não batem com o esperado. Plan=${updatedProfile.plan}, CustomerID=${updatedProfile.stripe_customer_id}`);
+              console.error(`[Stripe Webhook] Verificação de falha: Dados no banco não batem com o esperado. Plan=${updatedProfile.plan}, Status=${updatedProfile.subscription_status}`);
             }
           }
         } else {
@@ -119,12 +131,12 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const status = subscription.status;
         const currentPeriodEnd = new Date((subscription as any).current_period_end * 1000).toISOString();
 
-        console.log(`[Stripe Webhook] Assinatura atualizada. CustomerID: ${customerId}, Status: ${status}`);
+        console.log(`[Stripe Webhook] Assinatura atualizada. CustomerID: ${customerId}, Status: ${status}, PeriodEnd: ${currentPeriodEnd}`);
 
         // Find user by stripe_customer_id
         const { data: profile, error: findError } = await supabaseAdmin
           .from('profiles')
-          .select('id')
+          .select('id, plan, subscription_status')
           .eq('stripe_customer_id', customerId)
           .single();
 
@@ -132,21 +144,26 @@ export default async function stripeWebhook(req: Request, res: Response) {
           console.error(`[Stripe Webhook] Erro ao buscar perfil pelo customerId ${customerId}:`, findError);
         } else if (profile) {
           const plan = (status === 'active' || status === 'trialing') ? 'pro' : 'free';
-          console.log(`[Stripe Webhook] Atualizando plano do usuário ${profile.id} para ${plan}`);
+          console.log(`[Stripe Webhook] Usuário encontrado: ${profile.id}. Plano atual: ${profile.plan}. Novo plano: ${plan}`);
           
-          const { error: updateError } = await supabaseAdmin
+          const updatePayload = { 
+            plan,
+            subscription_status: status,
+            subscription_current_period_end: currentPeriodEnd
+          };
+          
+          console.log(`[Stripe Webhook] Enviando payload ao Supabase (update) para o usuário ${profile.id}:`, JSON.stringify(updatePayload));
+
+          const { data, error: updateError } = await supabaseAdmin
             .from('profiles')
-            .update({ 
-              plan,
-              subscription_status: status,
-              subscription_current_period_end: currentPeriodEnd
-            })
-            .eq('id', profile.id);
+            .update(updatePayload)
+            .eq('id', profile.id)
+            .select();
           
           if (updateError) {
             console.error(`[Stripe Webhook] Erro ao atualizar plano do usuário ${profile.id}:`, updateError);
           } else {
-            console.log(`[Stripe Webhook] Usuário ${profile.id} atualizado para o plano ${plan} (status: ${status})`);
+            console.log(`[Stripe Webhook] Usuário ${profile.id} atualizado com sucesso. Dados retornados do banco:`, JSON.stringify(data));
           }
         }
         break;
@@ -160,27 +177,33 @@ export default async function stripeWebhook(req: Request, res: Response) {
 
         const { data: profile, error: findError } = await supabaseAdmin
           .from('profiles')
-          .select('id')
+          .select('id, plan')
           .eq('stripe_customer_id', customerId)
           .single();
 
         if (findError) {
           console.error(`[Stripe Webhook] Erro ao buscar perfil pelo customerId ${customerId}:`, findError);
         } else if (profile) {
-          console.log(`[Stripe Webhook] Rebaixando usuário ${profile.id} para FREE`);
-          const { error: updateError } = await supabaseAdmin
+          console.log(`[Stripe Webhook] Rebaixando usuário ${profile.id} para FREE. Plano atual: ${profile.plan}`);
+          
+          const updatePayload = { 
+            plan: 'free',
+            subscription_status: 'canceled',
+            subscription_current_period_end: null
+          };
+
+          console.log(`[Stripe Webhook] Enviando payload ao Supabase (delete) para o usuário ${profile.id}:`, JSON.stringify(updatePayload));
+
+          const { data, error: updateError } = await supabaseAdmin
             .from('profiles')
-            .update({ 
-              plan: 'free',
-              subscription_status: 'canceled',
-              subscription_current_period_end: null
-            })
-            .eq('id', profile.id);
+            .update(updatePayload)
+            .eq('id', profile.id)
+            .select();
           
           if (updateError) {
             console.error(`[Stripe Webhook] Erro ao rebaixar usuário ${profile.id} para FREE:`, updateError);
           } else {
-            console.log(`[Stripe Webhook] Usuário ${profile.id} rebaixado para o plano FREE devido ao cancelamento`);
+            console.log(`[Stripe Webhook] Usuário ${profile.id} rebaixado com sucesso. Dados retornados do banco:`, JSON.stringify(data));
           }
         }
         break;
