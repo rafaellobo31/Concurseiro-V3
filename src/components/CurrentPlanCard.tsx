@@ -1,6 +1,5 @@
-import { CheckCircle2, Star, Zap, Settings } from 'lucide-react';
+import { CheckCircle2, Star, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 interface CurrentPlanCardProps {
@@ -9,37 +8,7 @@ interface CurrentPlanCardProps {
 
 export const CurrentPlanCard = ({ plan }: CurrentPlanCardProps) => {
   const isPro = plan === 'pro';
-  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-
-  const handleManageSubscription = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const response = await fetch('/api/stripe/create-customer-portal-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error(data.error || 'Erro ao criar sessão do portal');
-      }
-    } catch (error) {
-      console.error('Portal error:', error);
-      alert('Não foi possível abrir o portal de gerenciamento. Tente novamente mais tarde.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <motion.div 
@@ -88,23 +57,6 @@ export const CurrentPlanCard = ({ plan }: CurrentPlanCardProps) => {
             ))}
           </ul>
         </div>
-
-        {isPro && (
-          <div className="pt-2 border-t border-indigo-100">
-            <button 
-              onClick={handleManageSubscription}
-              disabled={loading}
-              className="w-full py-2.5 px-4 bg-white hover:bg-indigo-100/50 text-indigo-600 border border-indigo-200 font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-              ) : (
-                <Settings size={16} />
-              )}
-              Gerenciar Assinatura
-            </button>
-          </div>
-        )}
       </div>
     </motion.div>
   );

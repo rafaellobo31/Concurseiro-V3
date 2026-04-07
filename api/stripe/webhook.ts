@@ -57,18 +57,34 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
         const customerId = session.customer as string;
+        const subscriptionId = session.subscription as string;
 
-        console.log(`[Stripe Webhook] Checkout concluído. UserID: ${userId}, CustomerID: ${customerId}`);
+        console.log(`[Stripe Webhook] Checkout concluído. UserID: ${userId}, CustomerID: ${customerId}, SubID: ${subscriptionId}`);
         console.log(`[Stripe Webhook] Metadata:`, JSON.stringify(session.metadata));
 
         if (userId) {
           console.log(`[Stripe Webhook] Iniciando update do plan para o usuário ${userId} usando Service Role Client`);
           
+          let subscriptionStatus = 'active';
+          let currentPeriodEnd = null;
+
+          if (subscriptionId) {
+            try {
+              const sub = await stripe.subscriptions.retrieve(subscriptionId);
+              subscriptionStatus = sub.status;
+              currentPeriodEnd = new Date((sub as any).current_period_end * 1000).toISOString();
+            } catch (e) {
+              console.error('[Stripe Webhook] Erro ao buscar assinatura:', e);
+            }
+          }
+
           const { data, error, count } = await supabaseAdmin
             .from('profiles')
             .update({ 
               plan: 'pro',
-              stripe_customer_id: customerId 
+              stripe_customer_id: customerId,
+              subscription_status: subscriptionStatus,
+              subscription_current_period_end: currentPeriodEnd
             })
             .eq('id', userId)
             .select(); // Retorna os dados para verificação
@@ -101,6 +117,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         const status = subscription.status;
+        const currentPeriodEnd = new Date((subscription as any).current_period_end * 1000).toISOString();
 
         console.log(`[Stripe Webhook] Assinatura atualizada. CustomerID: ${customerId}, Status: ${status}`);
 
@@ -119,7 +136,11 @@ export default async function stripeWebhook(req: Request, res: Response) {
           
           const { error: updateError } = await supabaseAdmin
             .from('profiles')
-            .update({ plan })
+            .update({ 
+              plan,
+              subscription_status: status,
+              subscription_current_period_end: currentPeriodEnd
+            })
             .eq('id', profile.id);
           
           if (updateError) {
@@ -149,7 +170,11 @@ export default async function stripeWebhook(req: Request, res: Response) {
           console.log(`[Stripe Webhook] Rebaixando usuário ${profile.id} para FREE`);
           const { error: updateError } = await supabaseAdmin
             .from('profiles')
-            .update({ plan: 'free' })
+            .update({ 
+              plan: 'free',
+              subscription_status: 'canceled',
+              subscription_current_period_end: null
+            })
             .eq('id', profile.id);
           
           if (updateError) {

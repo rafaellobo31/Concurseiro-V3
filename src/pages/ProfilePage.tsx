@@ -6,6 +6,7 @@ import { User } from '../types';
 import { ProfileHeaderCard } from '../components/ProfileHeaderCard';
 import { CurrentPlanCard } from '../components/CurrentPlanCard';
 import { UpgradeCard } from '../components/UpgradeCard';
+import { SubscriptionDetailsCard } from '../components/SubscriptionDetailsCard';
 import { motion } from 'motion/react';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -115,8 +116,12 @@ export default function ProfilePage() {
             <CurrentPlanCard plan={profile.plan || 'free'} />
           </div>
           
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-8">
             <UpgradeCard isPro={profile.plan === 'pro'} />
+            
+            {profile.plan === 'pro' && (
+              <SubscriptionDetailsCard user={profile} />
+            )}
             
             {profile.plan === 'pro' && (
               <motion.div 

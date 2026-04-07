@@ -6,6 +6,8 @@ export type User = {
   avatarUrl?: string;
   plan?: 'free' | 'pro';
   stripe_customer_id?: string;
+  subscriptionStatus?: string;
+  subscriptionCurrentPeriodEnd?: string;
   createdAt?: string;
 };
 
