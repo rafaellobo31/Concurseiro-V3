@@ -22,6 +22,27 @@ async function getRawBody(req: Request): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
+// Helper para converter timestamp do Stripe para ISO string com segurança
+function stripeTimestampToISO(timestamp: any): string | null {
+  if (!timestamp || typeof timestamp !== 'number') {
+    console.warn('[Stripe Webhook] Timestamp inválido ou ausente:', timestamp);
+    return null;
+  }
+  
+  try {
+    const date = new Date(timestamp * 1000);
+    // Verifica se a data é válida
+    if (isNaN(date.getTime())) {
+      console.warn('[Stripe Webhook] Date gerada é inválida para o timestamp:', timestamp);
+      return null;
+    }
+    return date.toISOString();
+  } catch (e) {
+    console.error('[Stripe Webhook] Erro ao converter timestamp para ISO:', e);
+    return null;
+  }
+}
+
 export default async function stripeWebhook(req: Request, res: Response) {
   console.log('[Stripe Webhook] Recebido novo evento');
   console.log('[Stripe Webhook] Método:', req.method);
@@ -77,7 +98,11 @@ export default async function stripeWebhook(req: Request, res: Response) {
               console.log(`[Stripe Webhook] Buscando detalhes da assinatura ${subscriptionId}...`);
               const sub = await stripe.subscriptions.retrieve(subscriptionId);
               subscriptionStatus = sub.status || 'active';
-              currentPeriodEnd = new Date((sub as any).current_period_end * 1000).toISOString();
+              
+              const rawPeriodEnd = (sub as any).current_period_end;
+              console.log(`[Stripe Webhook] Valor bruto current_period_end:`, rawPeriodEnd);
+              
+              currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
               console.log(`[Stripe Webhook] Assinatura recuperada: Status=${subscriptionStatus}, PeriodEnd=${currentPeriodEnd}`);
             } catch (e) {
               console.error('[Stripe Webhook] Erro ao buscar assinatura:', e);
@@ -129,7 +154,11 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         const status = subscription.status;
-        const currentPeriodEnd = new Date((subscription as any).current_period_end * 1000).toISOString();
+        
+        const rawPeriodEnd = (subscription as any).current_period_end;
+        console.log(`[Stripe Webhook] customer.subscription.updated - Valor bruto current_period_end:`, rawPeriodEnd);
+        
+        const currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
 
         console.log(`[Stripe Webhook] Assinatura atualizada. CustomerID: ${customerId}, Status: ${status}, PeriodEnd: ${currentPeriodEnd}`);
 
