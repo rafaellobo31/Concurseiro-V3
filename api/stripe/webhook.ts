@@ -96,11 +96,28 @@ export default async function stripeWebhook(req: Request, res: Response) {
           if (subscriptionId) {
             try {
               console.log(`[Stripe Webhook] Buscando detalhes da assinatura ${subscriptionId}...`);
-              const sub = await stripe.subscriptions.retrieve(subscriptionId);
+              const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+                expand: ['latest_invoice']
+              });
+              
+              // Log completo do objeto para depuração (removendo campos sensíveis se houver)
+              console.log(`[Stripe Webhook] Objeto Subscription completo:`, JSON.stringify(sub, null, 2));
+              
               subscriptionStatus = sub.status || 'active';
               
-              const rawPeriodEnd = (sub as any).current_period_end;
-              console.log(`[Stripe Webhook] Valor bruto current_period_end:`, rawPeriodEnd);
+              // Tenta extrair de vários caminhos possíveis
+              const rawPeriodEnd = (sub as any).current_period_end || 
+                                   (sub as any).current_period_start || 
+                                   (sub as any).trial_end ||
+                                   (sub as any).latest_invoice?.period_end;
+                                   
+              console.log(`[Stripe Webhook] Tentativa de extração data:`, {
+                current_period_end: (sub as any).current_period_end,
+                current_period_start: (sub as any).current_period_start,
+                trial_end: (sub as any).trial_end,
+                latest_invoice_period_end: (sub as any).latest_invoice?.period_end,
+                chosen: rawPeriodEnd
+              });
               
               currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
               console.log(`[Stripe Webhook] Assinatura recuperada: Status=${subscriptionStatus}, PeriodEnd=${currentPeriodEnd}`);
@@ -155,8 +172,19 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const customerId = subscription.customer as string;
         const status = subscription.status;
         
-        const rawPeriodEnd = (subscription as any).current_period_end;
-        console.log(`[Stripe Webhook] customer.subscription.updated - Valor bruto current_period_end:`, rawPeriodEnd);
+        console.log(`[Stripe Webhook] customer.subscription.updated - Objeto Subscription completo:`, JSON.stringify(subscription, null, 2));
+
+        const rawPeriodEnd = (subscription as any).current_period_end || 
+                             (subscription as any).current_period_start || 
+                             (subscription as any).trial_end;
+                             
+        console.log(`[Stripe Webhook] customer.subscription.updated - Tentativa de extração data:`, {
+          current_period_end: (subscription as any).current_period_end,
+          current_period_start: (subscription as any).current_period_start,
+          trial_end: (subscription as any).trial_end,
+          cancel_at: (subscription as any).cancel_at,
+          chosen: rawPeriodEnd
+        });
         
         const currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
 
