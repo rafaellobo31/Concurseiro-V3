@@ -8,6 +8,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,8 +86,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    console.log('[AuthProvider] refreshUser chamado. Plano atual:', user?.plan || 'free');
+    const updatedUser = await authService.refreshUser();
+    console.log('[AuthProvider] refreshUser concluído. Novo plano:', updatedUser?.plan || 'free');
+    setUser(updatedUser);
+    console.log('[AuthProvider] Estado global atualizado com sucesso.');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

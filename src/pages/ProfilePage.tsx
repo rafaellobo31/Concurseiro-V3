@@ -11,7 +11,7 @@ import { motion } from 'motion/react';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +37,9 @@ export default function ProfilePage() {
             setTimeout(loadProfile, 3000);
           } else if (isCheckoutSuccess && data.plan === 'pro') {
             setShowSuccessMessage(true);
+            // Atualiza o estado global para que outras partes da aplicação reconheçam o plano Pro
+            console.log('[ProfilePage] Plano Pro detectado após checkout. Atualizando estado global...');
+            refreshUser();
           }
         } else {
           setError('Não foi possível carregar os dados do perfil.');

@@ -8,6 +8,8 @@ export function usePlan() {
   const isFree = planService.isFree(user);
   const isPro = planService.isPro(user);
 
+  console.log(`[usePlan] Reavaliando plano. Usuário: ${user?.id || 'null'}, Plano: ${plan}`);
+
   return {
     plan,
     isFree,

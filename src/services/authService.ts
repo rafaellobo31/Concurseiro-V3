@@ -86,6 +86,12 @@ export const authService = {
     }
   },
 
+  async refreshUser(): Promise<User | null> {
+    console.log('[AuthService] refreshUser iniciado. Limpando cache...');
+    cachedUser = null;
+    return this.getCurrentUser();
+  },
+
   async signIn(email: string, password: string): Promise<{ user: User | null; error: any }> {
     console.log('[AuthService] Início do login para:', email);
     
