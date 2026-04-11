@@ -33,6 +33,9 @@ export const profileService = {
       stripe_customer_id: data.stripe_customer_id,
       subscriptionStatus: data.subscription_status,
       subscriptionCurrentPeriodEnd: data.subscription_current_period_end,
+      subscriptionNextBillingDate: data.subscription_next_billing_date,
+      subscriptionCancelAtPeriodEnd: data.subscription_cancel_at_period_end,
+      subscriptionCanceledAt: data.subscription_canceled_at,
       createdAt: data.created_at
     } as User;
   }

@@ -104,6 +104,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
               console.log(`[Stripe Webhook] Objeto Subscription completo:`, JSON.stringify(sub, null, 2));
               
               subscriptionStatus = sub.status || 'active';
+              const cancelAtPeriodEnd = sub.cancel_at_period_end;
               
               // Tenta extrair de vários caminhos possíveis
               const rawPeriodEnd = (sub as any).current_period_end || 
@@ -120,45 +121,58 @@ export default async function stripeWebhook(req: Request, res: Response) {
               });
               
               currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
-              console.log(`[Stripe Webhook] Assinatura recuperada: Status=${subscriptionStatus}, PeriodEnd=${currentPeriodEnd}`);
+              const nextBillingDate = cancelAtPeriodEnd ? null : currentPeriodEnd;
+
+              console.log(`[Stripe Webhook] Assinatura recuperada: Status=${subscriptionStatus}, PeriodEnd=${currentPeriodEnd}, CancelAtPeriodEnd=${cancelAtPeriodEnd}`);
+
+              const updatePayload = { 
+                plan: 'pro',
+                stripe_customer_id: customerId,
+                subscription_status: subscriptionStatus,
+                subscription_current_period_end: currentPeriodEnd,
+                subscription_next_billing_date: nextBillingDate,
+                subscription_cancel_at_period_end: cancelAtPeriodEnd,
+                subscription_canceled_at: stripeTimestampToISO(sub.canceled_at)
+              };
+              
+              console.log(`[Stripe Webhook] Enviando payload ao Supabase para o usuário ${userId}:`, JSON.stringify(updatePayload));
+
+              const { data, error, count } = await supabaseAdmin
+                .from('profiles')
+                .update(updatePayload)
+                .eq('id', userId)
+                .select(); // Retorna os dados para verificação
+              
+              console.log(`[Stripe Webhook] Update retornado. Erro: ${error ? JSON.stringify(error) : 'null'}, Linhas afetadas: ${count ?? (data?.length || 0)}`);
+              
+              if (error) {
+                console.error(`[Stripe Webhook] Erro ao atualizar perfil do usuário ${userId}:`, error);
+              } else if (!data || data.length === 0) {
+                console.warn(`[Stripe Webhook] Nenhuma linha foi atualizada para o usuário ${userId}. Verifique se o ID existe na tabela profiles.`);
+              } else {
+                const updatedProfile = data[0];
+                console.log(`[Stripe Webhook] Usuário ${userId} atualizado com sucesso.`);
+                console.log(`[Stripe Webhook] Profile final no banco:`, JSON.stringify(updatedProfile));
+                
+                if (updatedProfile.plan === 'pro' && updatedProfile.subscription_status === subscriptionStatus) {
+                  console.log(`[Stripe Webhook] Verificação de sucesso: Plan=pro e Status=${subscriptionStatus} confirmados no banco.`);
+                } else {
+                  console.error(`[Stripe Webhook] Verificação de falha: Dados no banco não batem com o esperado. Plan=${updatedProfile.plan}, Status=${updatedProfile.subscription_status}`);
+                }
+              }
             } catch (e) {
               console.error('[Stripe Webhook] Erro ao buscar assinatura:', e);
             }
           } else {
             console.warn('[Stripe Webhook] subscriptionId ausente no checkout.session.completed');
-          }
-
-          const updatePayload = { 
-            plan: 'pro',
-            stripe_customer_id: customerId,
-            subscription_status: subscriptionStatus,
-            subscription_current_period_end: currentPeriodEnd
-          };
-          
-          console.log(`[Stripe Webhook] Enviando payload ao Supabase para o usuário ${userId}:`, JSON.stringify(updatePayload));
-
-          const { data, error, count } = await supabaseAdmin
-            .from('profiles')
-            .update(updatePayload)
-            .eq('id', userId)
-            .select(); // Retorna os dados para verificação
-          
-          console.log(`[Stripe Webhook] Update retornado. Erro: ${error ? JSON.stringify(error) : 'null'}, Linhas afetadas: ${count ?? (data?.length || 0)}`);
-          
-          if (error) {
-            console.error(`[Stripe Webhook] Erro ao atualizar perfil do usuário ${userId}:`, error);
-          } else if (!data || data.length === 0) {
-            console.warn(`[Stripe Webhook] Nenhuma linha foi atualizada para o usuário ${userId}. Verifique se o ID existe na tabela profiles.`);
-          } else {
-            const updatedProfile = data[0];
-            console.log(`[Stripe Webhook] Usuário ${userId} atualizado com sucesso.`);
-            console.log(`[Stripe Webhook] Profile final no banco:`, JSON.stringify(updatedProfile));
             
-            if (updatedProfile.plan === 'pro' && updatedProfile.subscription_status === subscriptionStatus) {
-              console.log(`[Stripe Webhook] Verificação de sucesso: Plan=pro e Status=${subscriptionStatus} confirmados no banco.`);
-            } else {
-              console.error(`[Stripe Webhook] Verificação de falha: Dados no banco não batem com o esperado. Plan=${updatedProfile.plan}, Status=${updatedProfile.subscription_status}`);
-            }
+            // Fallback: Atualiza apenas o plano e o customer ID se não houver assinatura (ex: pagamento único, embora não esperado aqui)
+            const { error } = await supabaseAdmin
+              .from('profiles')
+              .update({ plan: 'pro', stripe_customer_id: customerId })
+              .eq('id', userId);
+            
+            if (error) console.error(`[Stripe Webhook] Erro no fallback update:`, error);
           }
         } else {
           console.warn('[Stripe Webhook] Checkout concluído mas supabase_user_id não encontrado no metadata');
@@ -171,6 +185,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         const status = subscription.status;
+        const cancelAtPeriodEnd = subscription.cancel_at_period_end;
         
         console.log(`[Stripe Webhook] customer.subscription.updated - Objeto Subscription completo:`, JSON.stringify(subscription, null, 2));
 
@@ -187,8 +202,9 @@ export default async function stripeWebhook(req: Request, res: Response) {
         });
         
         const currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
+        const nextBillingDate = cancelAtPeriodEnd ? null : currentPeriodEnd;
 
-        console.log(`[Stripe Webhook] Assinatura atualizada. CustomerID: ${customerId}, Status: ${status}, PeriodEnd: ${currentPeriodEnd}`);
+        console.log(`[Stripe Webhook] Assinatura atualizada. CustomerID: ${customerId}, Status: ${status}, PeriodEnd: ${currentPeriodEnd}, CancelAtPeriodEnd: ${cancelAtPeriodEnd}`);
 
         // Find user by stripe_customer_id
         const { data: profile, error: findError } = await supabaseAdmin
@@ -200,13 +216,18 @@ export default async function stripeWebhook(req: Request, res: Response) {
         if (findError) {
           console.error(`[Stripe Webhook] Erro ao buscar perfil pelo customerId ${customerId}:`, findError);
         } else if (profile) {
+          // Se estiver ativo ou trialing, é PRO. 
+          // Se cancel_at_period_end for true, continua PRO até o fim do período.
           const plan = (status === 'active' || status === 'trialing') ? 'pro' : 'free';
           console.log(`[Stripe Webhook] Usuário encontrado: ${profile.id}. Plano atual: ${profile.plan}. Novo plano: ${plan}`);
           
           const updatePayload = { 
             plan,
             subscription_status: status,
-            subscription_current_period_end: currentPeriodEnd
+            subscription_current_period_end: currentPeriodEnd,
+            subscription_next_billing_date: nextBillingDate,
+            subscription_cancel_at_period_end: cancelAtPeriodEnd,
+            subscription_canceled_at: stripeTimestampToISO(subscription.canceled_at)
           };
           
           console.log(`[Stripe Webhook] Enviando payload ao Supabase (update) para o usuário ${profile.id}:`, JSON.stringify(updatePayload));
@@ -246,7 +267,10 @@ export default async function stripeWebhook(req: Request, res: Response) {
           const updatePayload = { 
             plan: 'free',
             subscription_status: 'canceled',
-            subscription_current_period_end: null
+            subscription_current_period_end: null,
+            subscription_next_billing_date: null,
+            subscription_cancel_at_period_end: false,
+            subscription_canceled_at: stripeTimestampToISO(subscription.canceled_at)
           };
 
           console.log(`[Stripe Webhook] Enviando payload ao Supabase (delete) para o usuário ${profile.id}:`, JSON.stringify(updatePayload));

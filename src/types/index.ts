@@ -8,6 +8,9 @@ export type User = {
   stripe_customer_id?: string;
   subscriptionStatus?: string;
   subscriptionCurrentPeriodEnd?: string;
+  subscriptionNextBillingDate?: string;
+  subscriptionCancelAtPeriodEnd?: boolean;
+  subscriptionCanceledAt?: string;
   createdAt?: string;
 };
 

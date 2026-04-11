@@ -1,4 +1,4 @@
-import { Calendar, CreditCard, Info, Settings } from 'lucide-react';
+import { Calendar, CreditCard, Info, Settings, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
 import { User } from '../types';
@@ -93,13 +93,42 @@ export const SubscriptionDetailsCard = ({ user }: SubscriptionDetailsCardProps) 
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
             <Calendar size={14} />
-            Próxima Cobrança
+            Acesso até
           </div>
           <p className="text-lg font-bold text-slate-900">
             {formatDate(user.subscriptionCurrentPeriodEnd)}
           </p>
         </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
+            <CreditCard size={14} />
+            Próxima Cobrança
+          </div>
+          <p className="text-lg font-bold text-slate-900">
+            {user.subscriptionCancelAtPeriodEnd ? (
+              <span className="text-slate-400 font-medium">Nenhuma</span>
+            ) : (
+              formatDate(user.subscriptionNextBillingDate || user.subscriptionCurrentPeriodEnd)
+            )}
+          </p>
+          {user.subscriptionCancelAtPeriodEnd && (
+            <p className="text-xs text-amber-600 font-medium flex items-center gap-1">
+              <Info size={12} />
+              Assinatura cancelada.
+            </p>
+          )}
+        </div>
       </div>
+
+      {user.subscriptionCancelAtPeriodEnd && (
+        <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-3">
+          <AlertCircle className="text-amber-600 mt-0.5" size={18} />
+          <p className="text-sm text-amber-800">
+            Sua assinatura foi cancelada, mas você continuará com acesso <strong>Pro</strong> até o dia <strong>{formatDate(user.subscriptionCurrentPeriodEnd)}</strong>. Após essa data, sua conta voltará para o plano gratuito.
+          </p>
+        </div>
+      )}
 
       <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-sm text-slate-500 max-w-xs">
