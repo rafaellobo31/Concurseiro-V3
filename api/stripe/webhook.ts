@@ -108,12 +108,14 @@ export default async function stripeWebhook(req: Request, res: Response) {
               
               // Tenta extrair de vários caminhos possíveis
               const rawPeriodEnd = (sub as any).current_period_end || 
+                                   (sub as any).cancel_at ||
                                    (sub as any).current_period_start || 
                                    (sub as any).trial_end ||
                                    (sub as any).latest_invoice?.period_end;
                                    
               console.log(`[Stripe Webhook] Tentativa de extração data:`, {
                 current_period_end: (sub as any).current_period_end,
+                cancel_at: (sub as any).cancel_at,
                 current_period_start: (sub as any).current_period_start,
                 trial_end: (sub as any).trial_end,
                 latest_invoice_period_end: (sub as any).latest_invoice?.period_end,
@@ -190,14 +192,15 @@ export default async function stripeWebhook(req: Request, res: Response) {
         console.log(`[Stripe Webhook] customer.subscription.updated - Objeto Subscription completo:`, JSON.stringify(subscription, null, 2));
 
         const rawPeriodEnd = (subscription as any).current_period_end || 
+                             (subscription as any).cancel_at ||
                              (subscription as any).current_period_start || 
                              (subscription as any).trial_end;
                              
         console.log(`[Stripe Webhook] customer.subscription.updated - Tentativa de extração data:`, {
           current_period_end: (subscription as any).current_period_end,
+          cancel_at: (subscription as any).cancel_at,
           current_period_start: (subscription as any).current_period_start,
           trial_end: (subscription as any).trial_end,
-          cancel_at: (subscription as any).cancel_at,
           chosen: rawPeriodEnd
         });
         
@@ -209,7 +212,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
         // Find user by stripe_customer_id
         const { data: profile, error: findError } = await supabaseAdmin
           .from('profiles')
-          .select('id, plan, subscription_status')
+          .select('id, plan, subscription_status, subscription_current_period_end')
           .eq('stripe_customer_id', customerId)
           .single();
 
@@ -221,10 +224,14 @@ export default async function stripeWebhook(req: Request, res: Response) {
           const plan = (status === 'active' || status === 'trialing') ? 'pro' : 'free';
           console.log(`[Stripe Webhook] Usuário encontrado: ${profile.id}. Plano atual: ${profile.plan}. Novo plano: ${plan}`);
           
+          // Fallback: se currentPeriodEnd for null mas já temos um no banco, mantemos o do banco
+          // Isso evita sobrescrever com null em caso de erro na extração durante cancelamento
+          const finalPeriodEnd = currentPeriodEnd || profile.subscription_current_period_end;
+          
           const updatePayload = { 
             plan,
             subscription_status: status,
-            subscription_current_period_end: currentPeriodEnd,
+            subscription_current_period_end: finalPeriodEnd,
             subscription_next_billing_date: nextBillingDate,
             subscription_cancel_at_period_end: cancelAtPeriodEnd,
             subscription_canceled_at: stripeTimestampToISO(subscription.canceled_at)

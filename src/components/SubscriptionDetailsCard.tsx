@@ -51,7 +51,9 @@ export const SubscriptionDetailsCard = ({ user }: SubscriptionDetailsCardProps) 
     unpaid: { label: 'Não Paga', color: 'text-red-600 bg-red-50 border-red-100' },
   };
 
-  const status = statusMap[user.subscriptionStatus || 'active'] || { label: 'Ativa', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' };
+  const status = user.subscriptionCancelAtPeriodEnd 
+    ? { label: 'Cancelada', color: 'text-slate-600 bg-slate-50 border-slate-100' }
+    : (statusMap[user.subscriptionStatus || 'active'] || { label: 'Ativa', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' });
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
