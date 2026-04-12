@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_MATERIAS, MOCK_LEVELS } from '../../mocks/data';
 import { Sparkles, ArrowRight, BookOpen, BarChart3, ListChecks } from 'lucide-react';
@@ -6,14 +6,24 @@ import { usePlan } from '../../hooks/usePlan';
 
 export function MateriaSimuladoForm() {
   const navigate = useNavigate();
-  const { isFree } = usePlan();
+  const { isFree, loading: planLoading } = usePlan();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     materia: '',
     nivel: '',
     tipoQuestao: 'multipla_escolha',
-    quantidade: isFree ? '4' : '10'
+    quantidade: '4' // Default to 4, will update in useEffect
   });
+
+  // Update default quantity when plan is resolved
+  useEffect(() => {
+    if (!planLoading) {
+      setFormData(prev => ({
+        ...prev,
+        quantidade: isFree ? '4' : '10'
+      }));
+    }
+  }, [isFree, planLoading]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { useState, FormEvent, useMemo } from 'react';
+import { useState, FormEvent, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CONCURSOS_CATEGORIAS_MOCK, CONCURSOS_MOCK } from '../../mocks/concursosMock';
 import { MOCK_BANCAS, MOCK_LEVELS } from '../../mocks/data';
@@ -8,7 +8,7 @@ import { usePlan } from '../../hooks/usePlan';
 
 export function ConcursoSimuladoForm() {
   const navigate = useNavigate();
-  const { isFree } = usePlan();
+  const { isFree, loading: planLoading } = usePlan();
   const [loading, setLoading] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,7 +16,7 @@ export function ConcursoSimuladoForm() {
     cargoId: '',
     banca: '',
     tipoQuestao: 'multipla_escolha',
-    quantidade: isFree ? '4' : '10',
+    quantidade: '4', // Default to 4, will update in useEffect
     nivel: 'Médio',
     // Manual fields
     customConcurso: '',
@@ -25,6 +25,16 @@ export function ConcursoSimuladoForm() {
     customBanca: '',
     customNivelEscolaridade: 'Superior'
   });
+
+  // Update default quantity when plan is resolved
+  useEffect(() => {
+    if (!planLoading) {
+      setFormData(prev => ({
+        ...prev,
+        quantidade: isFree ? '4' : '10'
+      }));
+    }
+  }, [isFree, planLoading]);
 
   const selectedConcurso = useMemo(() => 
     CONCURSOS_MOCK.find(c => c.id === formData.concursoId),

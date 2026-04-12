@@ -19,13 +19,13 @@ import { Link } from 'react-router-dom';
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const { user, loading: authLoading } = useAuth();
-  const { isFree } = usePlan();
+  const { isFree, loading: planLoading } = usePlan();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
-      if (authLoading) return;
+      if (authLoading || planLoading) return;
       
       try {
         setLoading(true);
@@ -40,9 +40,9 @@ export default function DashboardPage() {
       }
     }
     loadData();
-  }, [authLoading]);
+  }, [authLoading, planLoading]);
 
-  if (loading || authLoading) {
+  if (loading || authLoading || planLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <LoadingState message="Calculando suas métricas de desempenho..." />

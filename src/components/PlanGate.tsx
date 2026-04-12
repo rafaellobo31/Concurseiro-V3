@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { usePlan } from '../hooks/usePlan';
 import { FeatureName } from '../services/planService';
 import { UpgradeModal } from './UpgradeModal';
-import { Lock, Crown } from 'lucide-react';
+import { Lock, Crown, Loader2 } from 'lucide-react';
 
 interface PlanGateProps {
   children: ReactNode;
@@ -12,8 +12,17 @@ interface PlanGateProps {
 }
 
 export function PlanGate({ children, feature, fallback, showBadge = false }: PlanGateProps) {
-  const { canAccessFeature } = usePlan();
+  const { canAccessFeature, loading } = usePlan();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 animate-pulse">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-3" />
+        <p className="text-slate-400 text-sm font-medium">Verificando acesso...</p>
+      </div>
+    );
+  }
 
   const hasAccess = canAccessFeature(feature);
 

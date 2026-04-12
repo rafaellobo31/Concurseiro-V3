@@ -2,18 +2,21 @@ import { useAuth } from './useAuth';
 import { planService } from '../services/planService';
 
 export function usePlan() {
-  const { user } = useAuth();
+  const { user, planLoading } = useAuth();
 
   const plan = planService.getUserPlan(user);
   const isFree = planService.isFree(user);
   const isPro = planService.isPro(user);
 
-  console.log(`[usePlan] Reavaliando plano. Usuário: ${user?.id || 'null'}, Plano: ${plan}`);
+  if (!planLoading) {
+    console.log(`[usePlan] Plano resolvido. Usuário: ${user?.id || 'null'}, Plano: ${plan}`);
+  }
 
   return {
     plan,
     isFree,
     isPro,
+    loading: planLoading,
     maxQuestions: planService.maxQuestions(user),
     canAccessFeature: (feature: any) => planService.canAccessFeature(user, feature),
     canGenerateExam: (count: number) => planService.canGenerateExam(user, count),

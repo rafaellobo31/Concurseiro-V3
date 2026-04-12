@@ -11,7 +11,7 @@ import { motion } from 'motion/react';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user: authUser, refreshUser } = useAuth();
+  const { user: authUser, loading: authLoading, planLoading, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function loadProfile() {
-      if (!authUser?.id) return;
+      if (authLoading || planLoading) return;
+      if (!authUser?.id) {
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
@@ -53,9 +57,9 @@ export default function ProfilePage() {
     }
 
     loadProfile();
-  }, [authUser?.id, isCheckoutSuccess]);
+  }, [authUser?.id, authLoading, planLoading, isCheckoutSuccess]);
 
-  if (loading) {
+  if (loading || authLoading || planLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />

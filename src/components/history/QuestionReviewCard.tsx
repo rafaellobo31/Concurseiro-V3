@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, BookOpen, MessageSquare, Info, Landmark, Calendar, Tag, Lock } from 'lucide-react';
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp, BookOpen, MessageSquare, Info, Landmark, Calendar, Tag, Lock, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { cn } from '../../utils/cn';
@@ -13,7 +13,7 @@ interface QuestionReviewCardProps {
 
 export const QuestionReviewCard: React.FC<QuestionReviewCardProps> = ({ question, index }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { isFree } = usePlan();
+  const { isFree, loading } = usePlan();
 
   return (
     <div className={cn(
@@ -165,7 +165,12 @@ export const QuestionReviewCard: React.FC<QuestionReviewCardProps> = ({ question
                 </div>
                 <div className="h-px bg-slate-100 w-full" />
                 
-                {isFree ? (
+                {loading ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                    <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                    <p className="text-slate-400 text-sm font-medium">Verificando acesso...</p>
+                  </div>
+                ) : isFree ? (
                   <div className="py-12 flex flex-col items-center justify-center text-center space-y-6">
                     <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center shadow-sm">
                       <Lock size={32} />
