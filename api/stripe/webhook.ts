@@ -105,27 +105,32 @@ export default async function stripeWebhook(req: Request, res: Response) {
               
               subscriptionStatus = sub.status || 'active';
               const cancelAtPeriodEnd = sub.cancel_at_period_end;
+              const cancelAt = sub.cancel_at;
               
+              // Nova regra: considera cancelado se cancel_at_period_end for true OU cancel_at for futuro
+              const isCanceledAtEnd = cancelAtPeriodEnd || (!!cancelAt && cancelAt > Math.floor(Date.now() / 1000));
+
               // Tenta extrair de vários caminhos possíveis
-              const rawPeriodEnd = (sub as any).current_period_end || 
-                                   (sub as any).cancel_at ||
+              const rawPeriodEnd = cancelAt ||
+                                   (sub as any).current_period_end || 
                                    (sub as any).current_period_start || 
                                    (sub as any).trial_end ||
                                    (sub as any).latest_invoice?.period_end;
                                    
               console.log(`[Stripe Webhook] Tentativa de extração data:`, {
                 current_period_end: (sub as any).current_period_end,
-                cancel_at: (sub as any).cancel_at,
+                cancel_at: cancelAt,
                 current_period_start: (sub as any).current_period_start,
                 trial_end: (sub as any).trial_end,
                 latest_invoice_period_end: (sub as any).latest_invoice?.period_end,
-                chosen: rawPeriodEnd
+                chosen: rawPeriodEnd,
+                isCanceledAtEnd
               });
               
               currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
-              const nextBillingDate = cancelAtPeriodEnd ? null : currentPeriodEnd;
+              const nextBillingDate = isCanceledAtEnd ? null : currentPeriodEnd;
 
-              console.log(`[Stripe Webhook] Assinatura recuperada: Status=${subscriptionStatus}, PeriodEnd=${currentPeriodEnd}, CancelAtPeriodEnd=${cancelAtPeriodEnd}`);
+              console.log(`[Stripe Webhook] Assinatura recuperada: Status=${subscriptionStatus}, PeriodEnd=${currentPeriodEnd}, IsCanceledAtEnd=${isCanceledAtEnd}`);
 
               const updatePayload = { 
                 plan: 'pro',
@@ -133,7 +138,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
                 subscription_status: subscriptionStatus,
                 subscription_current_period_end: currentPeriodEnd,
                 subscription_next_billing_date: nextBillingDate,
-                subscription_cancel_at_period_end: cancelAtPeriodEnd,
+                subscription_cancel_at_period_end: isCanceledAtEnd,
                 subscription_canceled_at: stripeTimestampToISO(sub.canceled_at)
               };
               
@@ -188,26 +193,30 @@ export default async function stripeWebhook(req: Request, res: Response) {
         const customerId = subscription.customer as string;
         const status = subscription.status;
         const cancelAtPeriodEnd = subscription.cancel_at_period_end;
+        const cancelAt = subscription.cancel_at;
         
         console.log(`[Stripe Webhook] customer.subscription.updated - ID: ${subscription.id}`);
-        console.log(`[Stripe Webhook] Status: ${status}, CancelAtPeriodEnd: ${cancelAtPeriodEnd}`);
-        console.log(`[Stripe Webhook] CurrentPeriodEnd: ${(subscription as any).current_period_end}, CancelAt: ${(subscription as any).cancel_at}, CanceledAt: ${(subscription as any).canceled_at}`);
+        console.log(`[Stripe Webhook] Status: ${status}, CancelAtPeriodEnd: ${cancelAtPeriodEnd}, CancelAt: ${cancelAt}`);
 
-        const rawPeriodEnd = (subscription as any).current_period_end || 
-                             (subscription as any).cancel_at ||
+        // Nova regra: considera cancelado se cancel_at_period_end for true OU cancel_at for futuro
+        const isCanceledAtEnd = cancelAtPeriodEnd || (!!cancelAt && cancelAt > Math.floor(Date.now() / 1000));
+
+        const rawPeriodEnd = cancelAt ||
+                             (subscription as any).current_period_end || 
                              (subscription as any).current_period_start || 
                              (subscription as any).trial_end;
                              
         console.log(`[Stripe Webhook] Tentativa de extração data:`, {
           current_period_end: (subscription as any).current_period_end,
-          cancel_at: (subscription as any).cancel_at,
+          cancel_at: cancelAt,
           current_period_start: (subscription as any).current_period_start,
           trial_end: (subscription as any).trial_end,
-          chosen: rawPeriodEnd
+          chosen: rawPeriodEnd,
+          isCanceledAtEnd
         });
         
         const currentPeriodEnd = stripeTimestampToISO(rawPeriodEnd);
-        const nextBillingDate = cancelAtPeriodEnd ? null : currentPeriodEnd;
+        const nextBillingDate = isCanceledAtEnd ? null : currentPeriodEnd;
 
         // Find user by stripe_customer_id
         const { data: profile, error: findError } = await supabaseAdmin
@@ -234,7 +243,7 @@ export default async function stripeWebhook(req: Request, res: Response) {
             subscription_status: status,
             subscription_current_period_end: finalPeriodEnd,
             subscription_next_billing_date: nextBillingDate,
-            subscription_cancel_at_period_end: cancelAtPeriodEnd,
+            subscription_cancel_at_period_end: isCanceledAtEnd,
             subscription_canceled_at: stripeTimestampToISO(subscription.canceled_at)
           };
           
