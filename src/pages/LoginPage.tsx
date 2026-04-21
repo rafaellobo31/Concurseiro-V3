@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { BookOpen, Github, Mail, Lock, ArrowRight, User as UserIcon, AlertCircle } from 'lucide-react';
+import { BookOpen, Mail, Lock, ArrowRight, User as UserIcon, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -193,31 +193,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Ou continue com</span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-xl bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all">
-                <Github className="w-5 h-5" />
-              </button>
-              <button className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-xl bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all">
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M12.48 10.92v3.28h7.84c-.24 1.84-.9 3.22-1.9 4.22-1.2 1.2-3.04 2.4-6.42 2.4-5.46 0-9.84-4.42-9.84-9.84s4.38-9.84 9.84-9.84c2.94 0 5.1 1.16 6.86 2.82l2.34-2.34c-2.4-2.3-5.52-3.62-9.2-3.62-7.44 0-13.44 6-13.44 13.44s6 13.44 13.44 13.44c4.02 0 7.04-1.32 9.38-3.78 2.42-2.42 3.18-5.8 3.18-8.52 0-.82-.06-1.6-.18-2.34h-12.38z"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
         </motion.div>
       </div>
     </div>
