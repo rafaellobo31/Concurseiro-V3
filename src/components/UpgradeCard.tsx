@@ -4,18 +4,19 @@ import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 interface UpgradeCardProps {
-  isPro: boolean;
+  isPro?: boolean;
+  isLoading?: boolean;
 }
 
-export const UpgradeCard = ({ isPro }: UpgradeCardProps) => {
-  const [loading, setLoading] = useState(false);
+export const UpgradeCard = ({ isPro, isLoading }: UpgradeCardProps) => {
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const { user } = useAuth();
 
   const handleUpgrade = async () => {
     if (!user) return;
     
     try {
-      setLoading(true);
+      setCheckoutLoading(true);
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -37,11 +38,12 @@ export const UpgradeCard = ({ isPro }: UpgradeCardProps) => {
       console.error('Upgrade error:', error);
       alert('Não foi possível iniciar o checkout. Tente novamente mais tarde.');
     } finally {
-      setLoading(false);
+      setCheckoutLoading(false);
     }
   };
 
-  if (isPro) return null;
+  // Se o usuário for Pro ou se o plano ainda estiver carregando, NÃO renderizar o CTA de upgrade!
+  if (isPro || isLoading) return null;
 
   return (
     <>
@@ -77,10 +79,10 @@ export const UpgradeCard = ({ isPro }: UpgradeCardProps) => {
           <div className="pt-4">
             <button 
               onClick={handleUpgrade}
-              disabled={loading}
+              disabled={checkoutLoading}
               className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 group"
             >
-              {loading ? (
+              {checkoutLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Processando...

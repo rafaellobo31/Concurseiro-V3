@@ -15,19 +15,31 @@ export const editalAnalysisService = {
         body: JSON.stringify({ text })
       });
 
-      if (!response.ok) {
-        throw new Error(`Backend error: ${response.statusText}`);
+      const json = await response.json().catch(() => null);
+
+      if (!response.ok || !json?.success) {
+        const errorMsg = json?.message || json?.details || `Erro na análise do edital (${response.status})`;
+        const errorCode = json?.code || 'AI_UNAVAILABLE';
+        console.error(`[EditalAnalysisService] Resposta de erro do backend (${response.status}):`, errorMsg);
+        
+        return {
+          success: false,
+          code: errorCode,
+          error: errorMsg
+        };
       }
 
-      const result = await response.json() as EditalAnalysisResult;
       console.log(`[EditalAnalysisService] Sucesso na análise do edital`);
-      return result;
+      return {
+        success: true,
+        data: json.data
+      };
     } catch (error: any) {
-      console.error(`[EditalAnalysisService] Erro ao chamar backend para análise:`, error);
-      console.log(`[EditalAnalysisService] Fallback acionado: Retornando erro amigável`);
+      console.error(`[EditalAnalysisService] Erro de conexão ao chamar backend para análise:`, error);
       return {
         success: false,
-        error: "Erro ao conectar com o servidor de análise. Tente novamente."
+        code: 'NETWORK_ERROR',
+        error: "Não foi possível conectar ao servidor de análise. Verifique sua conexão e tente novamente."
       };
     }
   },

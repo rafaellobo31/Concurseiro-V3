@@ -30,6 +30,15 @@ export const authService = {
     }
 
     try {
+      console.log('[AuthService] Verificando sessão ativa no Supabase...');
+      const { data: { session }, error: sessionError } = await supabase!.auth.getSession();
+
+      if (sessionError || !session) {
+        console.log('[AuthService] Nenhuma sessão ativa no Supabase.');
+        cachedUser = null;
+        return null;
+      }
+
       console.log('[AuthService] Chamando supabase.auth.getUser()...');
       // Use a timeout for getUser too
       const getUserPromise = supabase!.auth.getUser();
@@ -40,7 +49,12 @@ export const authService = {
       const { data: { user }, error } = await Promise.race([getUserPromise, timeoutPromise]) as any;
       
       if (error) {
-        console.error('[AuthService] Erro ao obter usuário Supabase:', error);
+        if (error.name === 'AuthSessionMissingError' || error.message?.includes('Auth session missing') || error.message?.includes('session')) {
+          console.log('[AuthService] Sessão ausente ou expirada no Supabase.');
+        } else {
+          console.error('[AuthService] Erro ao obter usuário Supabase:', error);
+        }
+        cachedUser = null;
         return null;
       }
       

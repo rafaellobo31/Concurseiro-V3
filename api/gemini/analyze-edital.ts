@@ -2,41 +2,70 @@ import { Type } from "@google/genai";
 import { getAI, withRetry, handleGeminiError, modelName } from "./_shared.js";
 
 export default async function handler(req: any, res: any) {
-  console.log(`[Analyze-Edital] Início da requisição. Método: ${req.method}`);
+  const startTime = Date.now();
+  console.log(`[Analyze-Edital] Início da função. Método: ${req.method}`);
   
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: true, message: "Método não permitido" });
+    console.warn(`[Analyze-Edital] Método não permitido: ${req.method}`);
+    return res.status(405).json({
+      success: false,
+      code: "METHOD_NOT_ALLOWED",
+      message: "Método não permitido"
+    });
   }
 
-  const { text } = req.body;
-  console.log(`[Analyze-Edital] Tamanho do texto recebido: ${text ? text.length : 0} caracteres`);
+  const { text } = req.body || {};
+  const textLength = text ? text.length : 0;
+  console.log(`[Analyze-Edital] Tamanho do texto recebido: ${textLength} caracteres`);
 
-  if (!text) {
-    return res.status(400).json({ error: true, message: "Texto do edital ausente na requisição" });
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    console.warn("[Analyze-Edital] Texto do edital ausente ou inválido.");
+    return res.status(400).json({
+      success: false,
+      code: "INVALID_INPUT",
+      message: "Texto do edital ausente na requisição"
+    });
   }
+
+  const apiKeyPresent = !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY';
+  console.log(`[Analyze-Edital] Presença da GEMINI_API_KEY: ${apiKeyPresent ? 'Sim' : 'Não'}`);
+  console.log(`[Analyze-Edital] Modelo utilizado: ${modelName}`);
 
   const ai = getAI();
 
   if (!ai) {
-    console.warn("[Analyze-Edital] API Key missing. Falling back to mock.");
+    console.warn("[Analyze-Edital] API Key missing ou inválida. Retornando mock de análise.");
     return res.json({
       success: true,
       data: {
-        concurso: "Concurso Mock (Chave API não configurada)",
+        concurso: "Concurso Exemplo (Modo Demonstração)",
         orgao: "Órgão Exemplo",
         cargo: "Cargo Exemplo",
         banca: "Banca Exemplo",
         escolaridade: "superior",
         materias: [
-          { nome: "Matéria Exemplo 1", topicos: ["Tópico 1.1", "Tópico 1.2"] },
-          { nome: "Matéria Exemplo 2", topicos: ["Tópico 2.1", "Tópico 2.2"] }
+          { nome: "Língua Portuguesa", topicos: ["Compreensão e interpretação de textos", "Gramática"] },
+          { nome: "Raciocínio Lógico", topicos: ["Lógica proposicional", "Problemas de contagem"] },
+          { nome: "Conhecimentos Específicos", topicos: ["Legislação aplicada", "Direito Administrativo"] }
         ],
-        observacoes: ["Configure sua chave Gemini para análise real"],
+        observacoes: ["Chave API não configurada ou em ambiente de demonstração."],
         prioridades: [
-          { materia: "Matéria Exemplo 1", peso: "alto" }
+          { materia: "Conhecimentos Específicos", peso: "alto" },
+          { materia: "Língua Portuguesa", peso: "médio" }
         ]
       }
     });
+  }
+
+  // Otimização de tamanho do texto: Se o PDF for muito extenso, selecionar as partes cruciais
+  // O conteúdo programático geralmente fica nos anexos finais, e o cabeçalho no início.
+  let processedText = text;
+  const MAX_CHAR_LIMIT = 100000;
+  if (textLength > MAX_CHAR_LIMIT) {
+    const head = text.substring(0, 45000);
+    const tail = text.substring(textLength - 50000);
+    processedText = `${head}\n\n[...TRECHO INTERMEDIÁRIO DO EDITAL OMITIDO PARA OTIMIZAÇÃO DE PERFORMANCE...]\n\n${tail}`;
+    console.log(`[Analyze-Edital] Texto truncado de ${textLength} para ${processedText.length} caracteres para evitar estouro de contexto/timeout.`);
   }
 
   try {
@@ -50,7 +79,7 @@ export default async function handler(req: any, res: any) {
         Se encontrar o cargo mas não as matérias, procure novamente nos anexos.
         
         Texto do Edital:
-        ${text.substring(0, 500000)} 
+        ${processedText} 
         
         Extraia:
         1. Nome do Concurso
@@ -63,7 +92,7 @@ export default async function handler(req: any, res: any) {
         8. Prioridades de estudo (quais matérias parecem ter mais peso ou importância)
       `;
 
-      console.log(`[Analyze-Edital] Chamando Gemini para análise...`);
+      console.log(`[Analyze-Edital] Início da chamada Gemini (generateContent)...`);
       
       const response = await ai.models.generateContent({
         model: modelName,
@@ -108,24 +137,41 @@ export default async function handler(req: any, res: any) {
         }
       });
       
-      console.log(`[Analyze-Edital] Resposta recebida da Gemini.`);
+      const responseTime = Date.now() - startTime;
+      console.log(`[Analyze-Edital] Resposta recebida da Gemini em ${responseTime}ms.`);
       
       if (!response.text) {
+        console.error("[Analyze-Edital] Resposta bruta da Gemini está vazia ou indefinida.");
         throw new Error("Resposta vazia da Gemini");
       }
 
+      const rawPreview = response.text.substring(0, 200);
+      console.log(`[Analyze-Edital] Texto bruto retornado (primeiros 200 chars): ${rawPreview}`);
+
       try {
-        return JSON.parse(response.text);
+        const parsedJSON = JSON.parse(response.text);
+        console.log(`[Analyze-Edital] Sucesso ao parsear JSON da resposta.`);
+        return parsedJSON;
       } catch (parseError: any) {
-        console.error(`[Analyze-Edital] Erro ao parsear JSON da Gemini:`, response.text);
+        console.error(`[Analyze-Edital] Erro de parsing JSON ao processar resposta: ${parseError.message}`);
+        console.error(`[Analyze-Edital] Texto completo não parseável:`, response.text);
         throw new Error(`Erro de parsing JSON: ${parseError.message}`);
       }
     }, "analyze-edital");
     
-    console.log(`[Analyze-Edital] Sucesso na análise.`);
-    res.json({ success: true, data });
+    console.log(`[Analyze-Edital] Sucesso total na análise. Tempo decorrido: ${Date.now() - startTime}ms.`);
+    return res.json({ success: true, data });
   } catch (error: any) {
-    console.error(`[Analyze-Edital] Falha na análise:`, error);
+    const errorMsg = error.message || String(error);
+    const stack = error.stack || 'Sem stack trace';
+    const status = error.status || error.code || 500;
+
+    console.error(`[Analyze-Edital] Erro completo na análise:`, {
+      message: errorMsg,
+      status,
+      stack,
+    });
+
     handleGeminiError(res, error, "analyze-edital");
   }
 }

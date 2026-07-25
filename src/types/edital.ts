@@ -23,4 +23,5 @@ export interface EditalAnalysisResult {
   success: boolean;
   data?: EditalAnalysis;
   error?: string;
+  code?: string;
 }

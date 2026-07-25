@@ -1,27 +1,38 @@
 import { useAuth } from './useAuth';
-import { planService } from '../services/planService';
+import { planService, FeatureName, PlanState } from '../services/planService';
 
 export function usePlan() {
-  const { user, planLoading } = useAuth();
+  const { user, planLoading, loading } = useAuth();
+  const isLoading = loading || planLoading;
 
-  const plan = planService.getUserPlan(user);
-  const isFree = planService.isFree(user);
-  const isPro = planService.isPro(user);
+  const planState: PlanState = planService.getUserPlan(user, isLoading);
+  const isUnknown = planState === 'loading';
+  const isFree = planState === 'free';
+  const isPro = planState === 'pro';
 
-  if (!planLoading) {
-    console.log(`[usePlan] Plano resolvido. Usuário: ${user?.id || 'null'}, Plano: ${plan}`);
+  if (isUnknown) {
+    console.log('[PlanGate] Plano carregando');
+  } else {
+    console.log(`[usePlan] Plano resolvido. Usuário: ${user?.id || 'null'}, Plano: ${planState}`);
+    if (isPro) {
+      console.log('[PlanGate] Plano resolvido: pro');
+      console.log('[PlanGate] Acesso ao edital: permitido');
+    } else {
+      console.log('[PlanGate] Plano resolvido: free');
+    }
   }
 
   return {
-    plan,
+    plan: planState,
+    isUnknown,
     isFree,
     isPro,
-    loading: planLoading,
-    maxQuestions: planService.maxQuestions(user),
-    canAccessFeature: (feature: any) => planService.canAccessFeature(user, feature),
-    canGenerateExam: (count: number) => planService.canGenerateExam(user, count),
-    canUseEditalMode: () => planService.canUseEditalMode(user),
-    canViewFullCorrection: () => planService.canViewFullCorrection(user),
-    canViewAdvancedDashboard: () => planService.canViewAdvancedDashboard(user)
+    loading: isLoading,
+    maxQuestions: planService.maxQuestions(user, isLoading),
+    canAccessFeature: (feature: FeatureName) => planService.canAccessFeature(user, feature, isLoading),
+    canGenerateExam: (count: number) => planService.canGenerateExam(user, count, isLoading),
+    canUseEditalMode: () => planService.canUseEditalMode(user, isLoading),
+    canViewFullCorrection: () => planService.canViewFullCorrection(user, isLoading),
+    canViewAdvancedDashboard: () => planService.canViewAdvancedDashboard(user, isLoading)
   };
 }

@@ -20,56 +20,56 @@ export const historyService = {
     // Tenta salvar no Supabase se estiver configurado e o usuário estiver logado
     if (isSupabaseConfigured) {
       try {
-        const { data: { user }, error: userError } = await supabase!.auth.getUser();
-        console.log('[HistoryService] Usuário autenticado:', user);
-        
-        if (userError) {
-          console.error('[HistoryService] Erro ao obter usuário:', userError);
-        }
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (session) {
+          const { data: { user }, error: userError } = await supabase!.auth.getUser();
+          console.log('[HistoryService] Usuário autenticado:', user);
+          
+          if (userError && userError.name !== 'AuthSessionMissingError' && !userError.message?.includes('Auth session missing')) {
+            console.error('[HistoryService] Erro ao obter usuário:', userError);
+          }
 
-        if (user) {
-          const supabaseData = {
-            user_id: user.id,
-            mode: newRecord.mode,
-            tipo_questao: newRecord.tipoQuestao,
-            origem_questoes: newRecord.origemQuestoes,
-            concurso: newRecord.concurso,
-            materia: newRecord.materia,
-            area: newRecord.area,
-            banca: newRecord.banca,
-            quantidade_questoes: newRecord.quantidadeQuestoes,
-            acertos: newRecord.acertos,
-            erros: newRecord.erros,
-            percentual: newRecord.percentual,
-            nivel_desempenho: newRecord.nivelDesempenho,
-            mensagem_resumo: newRecord.mensagemResumo,
-            assuntos_revisao: newRecord.assuntosParaRevisao,
-            exam_id: newRecord.examId,
-          };
+          if (user) {
+            const supabaseData = {
+              user_id: user.id,
+              mode: newRecord.mode,
+              tipo_questao: newRecord.tipoQuestao,
+              origem_questoes: newRecord.origemQuestoes,
+              concurso: newRecord.concurso,
+              materia: newRecord.materia,
+              area: newRecord.area,
+              banca: newRecord.banca,
+              quantidade_questoes: newRecord.quantidadeQuestoes,
+              acertos: newRecord.acertos,
+              erros: newRecord.erros,
+              percentual: newRecord.percentual,
+              nivel_desempenho: newRecord.nivelDesempenho,
+              mensagem_resumo: newRecord.mensagemResumo,
+              assuntos_revisao: newRecord.assuntosParaRevisao,
+              exam_id: newRecord.examId,
+            };
 
-          console.log('[HistoryService] Payload enviado para Supabase:', supabaseData);
+            console.log('[HistoryService] Payload enviado para Supabase:', supabaseData);
 
-          console.log('[HistoryService] Payload simulado_history:', supabaseData);
-          const { data, error } = await supabase!
-            .from('simulado_history')
-            .insert(supabaseData)
-            .select()
-            .single();
+            const { data, error } = await supabase!
+              .from('simulado_history')
+              .insert(supabaseData)
+              .select()
+              .single();
 
-          if (error) {
-            console.error('[HistoryService] Erro insert simulado_history:', error);
-          } else {
-            console.log('[HistoryService] Resultado insert simulado_history:', data);
-            if (data) {
+            if (error) {
+              console.error('[HistoryService] Erro insert simulado_history:', error);
+            } else if (data) {
+              console.log('[HistoryService] Resultado insert simulado_history:', data);
               return {
                 ...newRecord,
                 id: data.id,
                 createdAt: data.created_at
               };
             }
+          } else {
+            console.warn('[HistoryService] Nenhum usuário autenticado no Supabase, usando fallback local.');
           }
-        } else {
-          console.warn('[HistoryService] Nenhum usuário autenticado no Supabase, usando fallback local.');
         }
       } catch (err) {
         console.error('[HistoryService] Erro inesperado na integração com Supabase:', err);
@@ -95,39 +95,42 @@ export const historyService = {
     // Tenta buscar do Supabase se estiver configurado e o usuário estiver logado
     if (isSupabaseConfigured) {
       try {
-        const { data: { user } } = await supabase!.auth.getUser();
-        console.log('[HistoryService] getHistoryItems - Usuário:', user?.id);
-        
-        if (user) {
-          const { data, error } = await supabase!
-            .from('simulado_history')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (session) {
+          const { data: { user } } = await supabase!.auth.getUser();
+          console.log('[HistoryService] getHistoryItems - Usuário:', user?.id);
+          
+          if (user) {
+            const { data, error } = await supabase!
+              .from('simulado_history')
+              .select('*')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false });
 
-          if (!error && data) {
-            console.log('[HistoryService] getHistoryItems - Sucesso Supabase:', data.length, 'itens');
-            return data.map((item: any) => ({
-              id: item.id,
-              createdAt: item.created_at,
-              mode: item.mode,
-              tipoQuestao: item.tipo_questao,
-              origemQuestoes: item.origem_questoes,
-              concurso: item.concurso,
-              materia: item.materia,
-              area: item.area,
-              banca: item.banca,
-              quantidadeQuestoes: item.quantidade_questoes,
-              acertos: item.acertos,
-              erros: item.erros,
-              percentual: item.percentual,
-              nivelDesempenho: item.nivel_desempenho,
-              mensagemResumo: item.mensagem_resumo,
-              assuntosParaRevisao: item.assuntos_revisao,
-              examId: item.exam_id,
-            }));
-          } else if (error) {
-            console.error('[HistoryService] Erro ao buscar do Supabase:', error);
+            if (!error && data) {
+              console.log('[HistoryService] getHistoryItems - Sucesso Supabase:', data.length, 'itens');
+              return data.map((item: any) => ({
+                id: item.id,
+                createdAt: item.created_at,
+                mode: item.mode,
+                tipoQuestao: item.tipo_questao,
+                origemQuestoes: item.origem_questoes,
+                concurso: item.concurso,
+                materia: item.materia,
+                area: item.area,
+                banca: item.banca,
+                quantidadeQuestoes: item.quantidade_questoes,
+                acertos: item.acertos,
+                erros: item.erros,
+                percentual: item.percentual,
+                nivelDesempenho: item.nivel_desempenho,
+                mensagemResumo: item.mensagem_resumo,
+                assuntosParaRevisao: item.assuntos_revisao,
+                examId: item.exam_id,
+              }));
+            } else if (error) {
+              console.error('[HistoryService] Erro ao buscar do Supabase:', error);
+            }
           }
         }
       } catch (err) {
@@ -160,18 +163,21 @@ export const historyService = {
   async clearHistory(): Promise<void> {
     if (isSupabaseConfigured) {
       try {
-        const { data: { user } } = await supabase!.auth.getUser();
-        if (user) {
-          const { error } = await supabase!
-            .from('simulado_history')
-            .delete()
-            .eq('user_id', user.id);
-          
-          if (!error) {
-            console.log('[HistoryService] Histórico limpo no Supabase.');
-            return;
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (session) {
+          const { data: { user } } = await supabase!.auth.getUser();
+          if (user) {
+            const { error } = await supabase!
+              .from('simulado_history')
+              .delete()
+              .eq('user_id', user.id);
+            
+            if (!error) {
+              console.log('[HistoryService] Histórico limpo no Supabase.');
+              return;
+            }
+            console.error('[HistoryService] Erro ao limpar histórico no Supabase:', error);
           }
-          console.error('[HistoryService] Erro ao limpar histórico no Supabase:', error);
         }
       } catch (err) {
         console.error('[HistoryService] Erro inesperado ao limpar histórico no Supabase:', err);

@@ -12,10 +12,10 @@ interface PlanGateProps {
 }
 
 export function PlanGate({ children, feature, fallback, showBadge = false }: PlanGateProps) {
-  const { canAccessFeature, loading } = usePlan();
+  const { canAccessFeature, isUnknown, loading } = usePlan();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (loading) {
+  if (loading || isUnknown) {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 animate-pulse">
         <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-3" />

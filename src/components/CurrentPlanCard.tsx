@@ -1,14 +1,21 @@
-import { CheckCircle2, Star, Zap } from 'lucide-react';
+import { CheckCircle2, Star, Zap, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useAuth } from '../hooks/useAuth';
 
 interface CurrentPlanCardProps {
-  plan: 'free' | 'pro';
+  plan: 'loading' | 'free' | 'pro';
 }
 
 export const CurrentPlanCard = ({ plan }: CurrentPlanCardProps) => {
+  if (plan === 'loading') {
+    return (
+      <div className="p-6 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center py-10 animate-pulse">
+        <Loader2 className="w-6 h-6 text-indigo-500 animate-spin mb-2" />
+        <p className="text-xs font-semibold text-slate-400">Carregando dados do plano...</p>
+      </div>
+    );
+  }
+
   const isPro = plan === 'pro';
-  const { user } = useAuth();
 
   return (
     <motion.div 

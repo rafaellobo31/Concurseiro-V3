@@ -14,6 +14,11 @@ export const examPersistenceService = {
     }
 
     try {
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session) {
+        console.log('[ExamPersistenceService] Nenhuma sessão ativa no Supabase.');
+        return { examId: null };
+      }
       const { data: { user } } = await supabase!.auth.getUser();
       console.log('[ExamPersistenceService] Usuário autenticado:', user);
       if (!user) {

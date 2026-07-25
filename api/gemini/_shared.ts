@@ -23,6 +23,8 @@ export const getAI = () => {
 export async function withRetry<T>(fn: () => Promise<T>, context: string): Promise<T> {
   console.log(`[Gemini-Shared] Executing ${context} with model ${modelName}`);
   return aiRetry(fn, {
+    maxRetries: 1, // Limitar a no máximo 1 tentativa de retry
+    initialDelay: 1500,
     onRetry: (attempt, error) => {
       console.warn(`[Gemini-Shared] Retry attempt ${attempt} for ${context}. Error: ${error.message || error}`);
     }
@@ -50,10 +52,18 @@ export function handleGeminiError(res: any, error: any, context: string, fallbac
     return res.json(fallbackData);
   }
 
-  res.status(isRetryable ? 503 : 500).json({
+  const statusCode = isRetryable ? 503 : 500;
+  const errorCode = isRetryable ? "AI_UNAVAILABLE" : "AI_ERROR";
+  const userMessage = isRetryable 
+    ? "O serviço de IA está temporariamente indisponível devido a alta demanda. Tente novamente em alguns instantes."
+    : "Não foi possível processar a análise com a inteligência artificial. Tente novamente.";
+
+  res.status(statusCode).json({
+    success: false,
     error: true,
-    message: `Erro em ${context}: ${errorMessage}`,
-    details: stack,
+    code: errorCode,
+    message: userMessage,
+    details: errorMessage,
     isRetryable
   });
 }

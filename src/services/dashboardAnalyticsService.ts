@@ -32,6 +32,9 @@ export const dashboardAnalyticsService = {
     if (!isSupabaseConfigured) return null;
 
     try {
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session) return null;
+
       const { data: { user } } = await supabase!.auth.getUser();
       if (!user) return null;
 
